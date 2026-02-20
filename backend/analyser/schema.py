@@ -1,12 +1,27 @@
 """
 GraphQL schema for the Analyser app.
 Provides types, queries, and mutations for projects, analysis runs, metrics, and trends.
+Includes JWT authentication for mutations.
 """
 import graphene
+import graphql_jwt
 from graphene_django import DjangoObjectType
 from graphene import relay
 from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend
 from .engine import run_full_analysis, DIMENSION_CONFIG
+
+
+# ──────────────────────────────────────────────────────────────
+# Auth helpers
+# ──────────────────────────────────────────────────────────────
+
+
+def _require_auth(info):
+    """Raise an error if the user is not authenticated."""
+    user = info.context.user
+    if not user or not user.is_authenticated:
+        raise Exception("Authentication required. Please provide a valid JWT token.")
+    return user
 
 
 # ──────────────────────────────────────────────────────────────
@@ -82,7 +97,7 @@ class DimensionConfigType(graphene.ObjectType):
 
 
 # ──────────────────────────────────────────────────────────────
-# Queries
+# Queries (public — read-only)
 # ──────────────────────────────────────────────────────────────
 
 
@@ -91,6 +106,7 @@ class Query(graphene.ObjectType):
     project = graphene.Field(ProjectType, id=graphene.UUID(required=True))
     analysis_run = graphene.Field(AnalysisRunType, id=graphene.UUID(required=True))
     dimension_configs = graphene.List(DimensionConfigType)
+    me = graphene.String(description="Return current authenticated user's username")
 
     # Trends for a project
     trends = graphene.List(
@@ -132,9 +148,15 @@ class Query(graphene.ObjectType):
             qs = qs.filter(dimension=dimension)
         return qs[:limit]
 
+    def resolve_me(self, info):
+        user = info.context.user
+        if user.is_authenticated:
+            return user.username
+        return None
+
 
 # ──────────────────────────────────────────────────────────────
-# Mutations
+# Mutations (authenticated — require JWT)
 # ──────────────────────────────────────────────────────────────
 
 
@@ -149,6 +171,7 @@ class CreateProject(graphene.Mutation):
     project = graphene.Field(ProjectType)
 
     def mutate(self, info, name, description="", repo_url="", frontend_url="", backend_url=""):
+        _require_auth(info)
         project = Project.objects.create(
             name=name,
             description=description,
@@ -171,6 +194,7 @@ class UpdateProject(graphene.Mutation):
     project = graphene.Field(ProjectType)
 
     def mutate(self, info, id, **kwargs):
+        _require_auth(info)
         project = Project.objects.get(id=id)
         for key, value in kwargs.items():
             if value is not None:
@@ -186,25 +210,50 @@ class DeleteProject(graphene.Mutation):
     success = graphene.Boolean()
 
     def mutate(self, info, id):
+        _require_auth(info)
         Project.objects.filter(id=id).delete()
         return DeleteProject(success=True)
 
 
 class RunAnalysis(graphene.Mutation):
-    """Trigger a full analysis run for a project — collects real-time data."""
+    """Trigger a full analysis run for a project.
+    If Celery is available, dispatches async; otherwise runs synchronously.
+    """
 
     class Arguments:
         project_id = graphene.UUID(required=True)
 
     analysis_run = graphene.Field(AnalysisRunType)
+    async_dispatched = graphene.Boolean(description="True if dispatched to Celery queue")
 
     def mutate(self, info, project_id):
+        _require_auth(info)
         project = Project.objects.get(id=project_id)
-        analysis_run = run_full_analysis(project)
-        return RunAnalysis(analysis_run=analysis_run)
+
+        # Try async dispatch via Celery first
+        try:
+            from .tasks import run_analysis_async
+            run_analysis_async.delay(str(project_id))
+
+            # Create a pending run so the frontend can poll
+            pending_run = AnalysisRun.objects.create(
+                project=project,
+                status="pending",
+            )
+            return RunAnalysis(analysis_run=pending_run, async_dispatched=True)
+        except Exception:
+            # Celery not available — fall back to synchronous execution
+            analysis_run = run_full_analysis(project)
+            return RunAnalysis(analysis_run=analysis_run, async_dispatched=False)
 
 
 class Mutation(graphene.ObjectType):
+    # JWT auth mutations
+    token_auth = graphql_jwt.ObtainJSONWebToken.Field()
+    verify_token = graphql_jwt.Verify.Field()
+    refresh_token = graphql_jwt.Refresh.Field()
+
+    # App mutations (authenticated)
     create_project = CreateProject.Field()
     update_project = UpdateProject.Field()
     delete_project = DeleteProject.Field()

@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL (local dev — in production use Neon) ──
+  # Uncomment to use local PostgreSQL instead of Neon:
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_DB: analyser
+  #     POSTGRES_USER: analyser
+  #     POSTGRES_PASSWORD: analyser_pass
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+  # ── Redis (local dev — in production use Upstash) ──
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # ── Django Backend ──
+  backend:
+    build:
+      context: .
+      target: backend
+    env_file: backend/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=project_analyser.settings
+      # Override Redis to use local container (comment out to use Upstash)
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    volumes:
+      - ./backend:/app/backend
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn project_analyser.wsgi:application --bind 0.0.0.0:8000 --workers 3 --reload"
+
+  # ── Celery Worker ──
+  celery:
+    build:
+      context: .
+      target: backend
+    env_file: backend/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=project_analyser.settings
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - backend
+    volumes:
+      - ./backend:/app/backend
+    command: celery -A project_analyser worker --loglevel=info --concurrency=2
+
+  # ── Frontend (Vite dev server) ──
+  frontend:
+    build:
+      context: .
+      target: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:
+  # postgres_data:
