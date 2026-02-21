@@ -19,6 +19,9 @@ redis>=5.0
 # Authentication (JWT)
 django-graphql-jwt>=0.4
 
+# Google OAuth
+google-auth>=2.25
+
 # HTTP probing & system metrics
 requests>=2.31
 psutil>=5.9

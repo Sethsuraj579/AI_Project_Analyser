@@ -110,6 +110,53 @@ export const GET_DIMENSION_CONFIGS = gql`
 
 // ── Mutations ─────────────────────────────────────────────────
 
+export const TOKEN_AUTH = gql`
+  mutation TokenAuth($username: String!, $password: String!) {
+    tokenAuth(username: $username, password: $password) {
+      token
+    }
+  }
+`;
+
+export const SEND_OTP = gql`
+  mutation SendOTP($email: String!) {
+    sendOtp(email: $email) {
+      success
+      message
+    }
+  }
+`;
+
+export const VERIFY_OTP = gql`
+  mutation VerifyOTP($email: String!, $otpCode: String!) {
+    verifyOtpMutation(email: $email, otpCode: $otpCode) {
+      success
+      message
+    }
+  }
+`;
+
+export const REGISTER_USER = gql`
+  mutation RegisterUser($username: String!, $email: String!, $password: String!, $otpCode: String!) {
+    registerUser(username: $username, email: $email, password: $password, otpCode: $otpCode) {
+      success
+      message
+      token
+    }
+  }
+`;
+
+export const GOOGLE_AUTH = gql`
+  mutation GoogleAuth($googleToken: String!) {
+    googleAuth(googleToken: $googleToken) {
+      success
+      message
+      token
+      isNewUser
+    }
+  }
+`;
+
 export const CREATE_PROJECT = gql`
   mutation CreateProject(
     $name: String!

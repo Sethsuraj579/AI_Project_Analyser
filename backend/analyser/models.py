@@ -3,8 +3,55 @@ Models for AI Project Analyser.
 Tracks projects, analysis runs, metric snapshots, and computed scores.
 """
 import uuid
+import random
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
+from datetime import timedelta
+
+
+class EmailOTP(models.Model):
+    """Stores OTP codes for email verification during registration."""
+    email = models.EmailField()
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_verified = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"OTP for {self.email} ({'verified' if self.is_verified else 'pending'})"
+
+    @staticmethod
+    def generate(email):
+        """Create a new 6-digit OTP for the given email."""
+        # Invalidate any previous OTPs for this email
+        EmailOTP.objects.filter(email=email, is_verified=False).delete()
+        code = f"{random.randint(100000, 999999)}"
+        otp = EmailOTP.objects.create(
+            email=email,
+            otp_code=code,
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        return otp
+
+    @staticmethod
+    def verify(email, code):
+        """Verify an OTP code. Returns True if valid."""
+        try:
+            otp = EmailOTP.objects.get(
+                email=email,
+                otp_code=code,
+                is_verified=False,
+                expires_at__gte=timezone.now(),
+            )
+            otp.is_verified = True
+            otp.save()
+            return True
+        except EmailOTP.DoesNotExist:
+            return False
 
 
 class Project(models.Model):
