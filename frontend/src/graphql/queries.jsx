@@ -118,6 +118,16 @@ export const TOKEN_AUTH = gql`
   }
 `;
 
+export const LOGIN_USER = gql`
+  mutation LoginUser($username: String!, $password: String!) {
+    loginUser(username: $username, password: $password) {
+      success
+      message
+      token
+    }
+  }
+`;
+
 export const SEND_OTP = gql`
   mutation SendOTP($email: String!) {
     sendOtp(email: $email) {
@@ -151,8 +161,18 @@ export const GOOGLE_AUTH = gql`
     googleAuth(googleToken: $googleToken) {
       success
       message
-      token
+      email
       isNewUser
+    }
+  }
+`;
+
+export const VERIFY_GOOGLE_OTP = gql`
+  mutation VerifyGoogleOTP($email: String!, $otpCode: String!) {
+    verifyGoogleOtp(email: $email, otpCode: $otpCode) {
+      success
+      message
+      token
     }
   }
 `;

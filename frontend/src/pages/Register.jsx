@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
-import { SEND_OTP, REGISTER_USER, GOOGLE_AUTH } from '../graphql/queries';
+import { SEND_OTP, REGISTER_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 function Register({ onLogin, onSwitchToLogin }) {
-  const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification
+  const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification, 3 = Google OTP verification
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -15,9 +15,15 @@ function Register({ onLogin, onSwitchToLogin }) {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
+  // Google OTP state
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleOtp, setGoogleOtp] = useState('');
+  const [googleIsNewUser, setGoogleIsNewUser] = useState(false);
+
   const [sendOtp, { loading: sendingOtp }] = useMutation(SEND_OTP);
   const [registerUser, { loading: registering }] = useMutation(REGISTER_USER);
   const [googleAuth, { loading: googleLoading }] = useMutation(GOOGLE_AUTH);
+  const [verifyGoogleOtp, { loading: verifyingGoogleOtp }] = useMutation(VERIFY_GOOGLE_OTP);
 
   const trimmedUsername = form.username.trim();
   const trimmedEmail = form.email.trim().toLowerCase();
@@ -87,8 +93,29 @@ function Register({ onLogin, onSwitchToLogin }) {
     }
   };
 
+  const handleResendOtp = async () => {
+    setError('');
+    setInfo('');
+    if (!trimmedEmail) {
+      setError('Please enter a valid email first.');
+      setStep(1);
+      return;
+    }
+    try {
+      const res = await sendOtp({ variables: { email: trimmedEmail } });
+      if (res.data?.sendOtp?.success) {
+        setInfo(res.data.sendOtp.message);
+      } else {
+        setError(res.data?.sendOtp?.message || 'Failed to resend OTP.');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to resend OTP.');
+    }
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
+    setInfo('');
     try {
       if (!credentialResponse?.credential) {
         setError('Google sign-up failed.');
@@ -97,34 +124,45 @@ function Register({ onLogin, onSwitchToLogin }) {
       const res = await googleAuth({
         variables: { googleToken: credentialResponse.credential },
       });
-        const handleResendOtp = async () => {
-          setError('');
-          setInfo('');
-          if (!trimmedEmail) {
-            setError('Please enter a valid email first.');
-            setStep(1);
-            return;
-          }
-          try {
-            const res = await sendOtp({ variables: { email: trimmedEmail } });
-            if (res.data?.sendOtp?.success) {
-              setInfo(res.data.sendOtp.message);
-            } else {
-              setError(res.data?.sendOtp?.message || 'Failed to resend OTP.');
-            }
-          } catch (err) {
-            setError(err.message || 'Failed to resend OTP.');
-          }
-        };
       const data = res.data?.googleAuth;
-      if (data?.success && data?.token) {
-        localStorage.setItem('jwt_token', data.token);
-        onLogin(data.token);
+      if (data?.success) {
+        // Show Google OTP verification step
+        setGoogleEmail(data.email);
+        setGoogleIsNewUser(data.isNewUser);
+        setStep(3); // Go to Google OTP step
+        setInfo(data.message || 'Verification code sent to your email. Please check your inbox.');
+        setGoogleOtp('');
       } else {
         setError(data?.message || 'Google sign-up failed.');
       }
     } catch (err) {
       setError(err.message || 'Google sign-up failed.');
+    }
+  };
+
+  const handleVerifyGoogleOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+
+    if (!googleOtp.trim()) {
+      setError('Please enter the verification code.');
+      return;
+    }
+
+    try {
+      const res = await verifyGoogleOtp({
+        variables: { email: googleEmail, otpCode: googleOtp.trim() },
+      });
+      const data = res.data?.verifyGoogleOtp;
+      if (data?.success && data?.token) {
+        localStorage.setItem('jwt_token', data.token);
+        onLogin(data.token);
+      } else {
+        setError(data?.message || 'Verification failed.');
+      }
+    } catch (err) {
+      setError(err.message || 'Verification failed.');
     }
   };
 
@@ -137,7 +175,7 @@ function Register({ onLogin, onSwitchToLogin }) {
         </p>
 
         {error && <div className="login-error">{error}</div>}
-        {info && <div className="login-info">{info}</div>}
+        {info && <div className="login-info" style={{ color: 'var(--success)', marginBottom: 16, padding: 12, borderRadius: 8, backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>{info}</div>}
 
         {step === 1 ? (
           <>
@@ -224,7 +262,8 @@ function Register({ onLogin, onSwitchToLogin }) {
               text="Sign up with Google"
             />
           </>
-        ) : (
+        ) : step === 2 ? (
+          // Email + Password OTP verification
           <form onSubmit={handleVerifyAndRegister}>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16, textAlign: 'left' }}>
               We sent a 6-digit code to <strong style={{ color: 'var(--accent)' }}>{form.email}</strong>
@@ -266,6 +305,45 @@ function Register({ onLogin, onSwitchToLogin }) {
               type="button"
               className="btn-link"
               onClick={() => { setStep(1); setOtpCode(''); setError(''); setInfo(''); }}
+              style={{ marginTop: 12 }}
+            >
+              ← Back to registration
+            </button>
+          </form>
+        ) : (
+          // Google OTP verification
+          <form onSubmit={handleVerifyGoogleOtp}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16, textAlign: 'left' }}>
+              We sent a 6-digit code to <strong style={{ color: 'var(--accent)' }}>{googleEmail}</strong>
+            </p>
+            <div className="form-group">
+              <label>Verification Code</label>
+              <input
+                value={googleOtp}
+                onChange={(e) => {
+                  setGoogleOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  if (error) setError('');
+                }}
+                placeholder="Enter 6-digit code"
+                required
+                autoFocus
+                maxLength={6}
+                inputMode="numeric"
+                style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.5em' }}
+              />
+            </div>
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={verifyingGoogleOtp}
+              style={{ width: '100%', marginTop: 8 }}
+            >
+              {verifyingGoogleOtp ? 'Verifying...' : `Verify & ${googleIsNewUser ? 'Create' : 'Login'}`}
+            </button>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() => { setStep(1); setGoogleOtp(''); setError(''); setInfo(''); }}
               style={{ marginTop: 12 }}
             >
               ← Back to registration

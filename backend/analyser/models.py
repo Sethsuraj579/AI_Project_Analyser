@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from datetime import timedelta
 
 
+
 class EmailOTP(models.Model):
     """Stores OTP codes for email verification during registration."""
     email = models.EmailField()
@@ -329,9 +330,9 @@ class Payment(models.Model):
     
     # Razorpay integration
     razorpay_order_id = models.CharField(max_length=255, unique=True, db_index=True, blank=True, null=True)
-    razorpay_payment_id = models.CharField(max_length=255, blank=True, db_index=True)
-    razorpay_signature = models.CharField(max_length=255, blank=True)
-    razorpay_subscription_id = models.CharField(max_length=255, blank=True, db_index=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_subscription_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     
@@ -378,7 +379,7 @@ class Invoice(models.Model):
     
     # Razorpay integration
     razorpay_invoice_id = models.CharField(max_length=255, unique=True, db_index=True, blank=True, null=True)
-    razorpay_payment_id = models.CharField(max_length=255, blank=True, db_index=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True, db_index=True)
     
     # Dates
     issued_at = models.DateTimeField(auto_now_add=True)

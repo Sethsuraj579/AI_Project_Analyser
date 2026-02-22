@@ -563,12 +563,40 @@ class RegisterUser(graphene.Mutation):
         free_plan = Plan.objects.get(name="free")
         UserSubscription.objects.create(user=user, plan=free_plan)
 
+        # Send welcome email
+        try:
+            send_mail(
+                subject="Welcome to AI Project Analyser! 🎉",
+                message=f"""Hello {username},
+
+Welcome to AI Project Analyser! Your account has been created successfully.
+
+Account Details:
+- Username: {username}
+- Email: {email}
+- Plan: Free (Unlimited projects, 10 analyses per month)
+
+You can now log in at: http://localhost:5173
+
+If you didn't create this account, please contact our support team.
+
+Best regards,
+AI Project Analyser Team
+""",
+                from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            logger.info("Welcome email sent to new user: %s (%s)", username, email)
+        except Exception as exc:
+            logger.warning("Failed to send welcome email to %s: %s", email, exc)
+
         # Generate JWT token for immediate login
         from graphql_jwt.shortcuts import get_token
         token = get_token(user)
 
         logger.info("New user registered: %s (%s) with FREE plan", username, email)
-        return RegisterUser(success=True, message="Account created successfully!", token=token)
+        return RegisterUser(success=True, message="Account created successfully! Welcome email sent.", token=token)
 
 
 class UpgradePlan(graphene.Mutation):
@@ -851,14 +879,14 @@ class VerifyRazorpayPayment(graphene.Mutation):
 
 
 class GoogleAuth(graphene.Mutation):
-    """Authenticate or register via Google OAuth. Verifies the Google ID token server-side."""
+    """Authenticate or register via Google OAuth. Sends OTP to the verified email for security."""
 
     class Arguments:
         google_token = graphene.String(required=True)
 
     success = graphene.Boolean()
     message = graphene.String()
-    token = graphene.String()
+    email = graphene.String()
     is_new_user = graphene.Boolean()
 
     def mutate(self, info, google_token):
@@ -871,7 +899,7 @@ class GoogleAuth(graphene.Mutation):
                 return GoogleAuth(
                     success=False,
                     message="Google OAuth is not configured on the server.",
-                    token=None,
+                    email=None,
                     is_new_user=False,
                 )
 
@@ -887,7 +915,7 @@ class GoogleAuth(graphene.Mutation):
             given_name = idinfo.get("given_name", "")
 
             if not email:
-                return GoogleAuth(success=False, message="Could not retrieve email from Google.", token=None, is_new_user=False)
+                return GoogleAuth(success=False, message="Could not retrieve email from Google.", email=None, is_new_user=False)
 
             # Check if user exists with this email
             is_new = False
@@ -917,31 +945,144 @@ class GoogleAuth(graphene.Mutation):
                 
                 is_new = True
                 logger.info("New Google user registered: %s (%s) with FREE plan", username, email)
-
-            # Generate JWT
-            from graphql_jwt.shortcuts import get_token
-            token = get_token(user)
+            
+            # Generate and send OTP to user's Google email
+            otp = EmailOTP.generate(email)
+            
+            try:
+                send_mail(
+                    subject="AI Project Analyser — Email Verification Code",
+                    message=f"Hello {given_name or 'User'},\n\nYour email verification code is: {otp.otp_code}\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, please ignore this email.",
+                    from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                logger.info("Google OTP email sent to %s", email)
+            except Exception as exc:
+                logger.warning("Email send failed (%s). OTP for %s: %s", exc, email, otp.otp_code)
 
             return GoogleAuth(
                 success=True,
-                message="Welcome!" if not is_new else "Account created with Google!",
-                token=token,
+                message="Verification code sent to your email. Please check your inbox.",
+                email=email,
                 is_new_user=is_new,
             )
 
         except ValueError as exc:
             logger.warning("Google token verification failed: %s", exc)
-            return GoogleAuth(success=False, message="Invalid Google token.", token=None, is_new_user=False)
+            return GoogleAuth(success=False, message="Invalid Google token.", email=None, is_new_user=False)
         except ImportError:
             return GoogleAuth(
                 success=False,
                 message="Google auth library not installed. Run: pip install google-auth",
-                token=None,
+                email=None,
                 is_new_user=False,
             )
         except Exception as exc:
             logger.error("Google auth error: %s", exc)
-            return GoogleAuth(success=False, message="Google authentication failed.", token=None, is_new_user=False)
+            return GoogleAuth(success=False, message="Google authentication failed.", email=None, is_new_user=False)
+
+
+class LoginUser(graphene.Mutation):
+    """Authenticate user with username/password and send login notification email."""
+
+    class Arguments:
+        username = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    token = graphene.String()
+
+    def mutate(self, info, username, password):
+        from django.contrib.auth import authenticate
+        
+        username = username.strip()
+        
+        # Authenticate user
+        user = authenticate(username=username, password=password)
+        
+        if user is None:
+            return LoginUser(success=False, message="Invalid username or password.", token=None)
+        
+        # Generate JWT token
+        from graphql_jwt.shortcuts import get_token
+        token = get_token(user)
+        
+        # Send login notification email asynchronously (non-blocking)
+        try:
+            send_mail(
+                subject="Login Notification - AI Project Analyser",
+                message=f"""Hello {user.username},
+
+You have successfully logged in to your AI Project Analyser account.
+
+Login Details:
+- Username: {user.username}
+- Email: {user.email}
+- Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+If this wasn't you, please change your password immediately at:
+http://localhost:5173
+
+Best regards,
+AI Project Analyser Team
+""",
+                from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                recipient_list=[user.email],
+                fail_silently=True,  # Don't fail login if email fails
+            )
+            logger.info("Login notification email sent to: %s (%s)", user.username, user.email)
+        except Exception as exc:
+            logger.warning("Failed to send login email to %s: %s", user.email, exc)
+        
+        logger.info("User logged in: %s", user.username)
+        return LoginUser(success=True, message="Login successful!", token=token)
+
+
+class VerifyGoogleOTP(graphene.Mutation):
+    """Verify OTP sent to Google user's email and complete login/registration."""
+
+    class Arguments:
+        email = graphene.String(required=True)
+        otp_code = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    token = graphene.String()
+
+    def mutate(self, info, email, otp_code):
+        email = email.strip().lower()
+        otp_code = otp_code.strip()
+
+        # Verify the OTP
+        if not EmailOTP.verify(email, otp_code):
+            return VerifyGoogleOTP(
+                success=False,
+                message="Invalid or expired verification code.",
+                token=None,
+            )
+
+        # Get user and generate JWT token
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return VerifyGoogleOTP(
+                success=False,
+                message="User not found. Please complete Google authentication first.",
+                token=None,
+            )
+
+        # Generate JWT token for login
+        from graphql_jwt.shortcuts import get_token
+        token = get_token(user)
+
+        logger.info("Google user verified via OTP: %s", email)
+        return VerifyGoogleOTP(
+            success=True,
+            message="Email verified successfully! You are now logged in.",
+            token=token,
+        )
 
 
 class Mutation(graphene.ObjectType):
@@ -954,7 +1095,9 @@ class Mutation(graphene.ObjectType):
     send_otp = SendOTP.Field()
     verify_otp_mutation = VerifyOTP.Field()
     register_user = RegisterUser.Field()
+    login_user = LoginUser.Field()
     google_auth = GoogleAuth.Field()
+    verify_google_otp = VerifyGoogleOTP.Field()
 
     # Subscription & Plans
     upgrade_plan = UpgradePlan.Field()
