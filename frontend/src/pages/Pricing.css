@@ -1,0 +1,31 @@
+.pricing-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px;
+}
+
+.pricing-nav {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+}
+
+.back-btn {
+  background: white;
+  border: 1px solid #e0e0e0;
+  color: #333;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-btn:hover {
+  background: #f5f5f5;
+  border-color: #d0d0d0;
+  transform: translateX(-3px);
+}

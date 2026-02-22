@@ -10,6 +10,8 @@ import WeightPieChart from '../components/WeightPieChart';
 import TrendLineChart from '../components/TrendLineChart';
 import MetricDetailCard from '../components/MetricDetailCard';
 import ScoreHeatmap from '../components/ScoreHeatmap';
+import ProjectSummary from '../components/ProjectSummary';
+import ProjectChatbot from '../components/ProjectChatbot';
 
 function ProjectDetail() {
   const { id } = useParams();
@@ -120,6 +122,16 @@ function ProjectDetail() {
             {metrics.map((metric) => (
               <MetricDetailCard key={metric.id} metric={metric} configs={configs} />
             ))}
+          </div>
+
+          {/* Row 6: AI Summary & Chatbot */}
+          <div className="grid-2" style={{ marginBottom: 24 }}>
+            <div className="card">
+              <ProjectSummary projectId={project.id} />
+            </div>
+            <div className="card">
+              <ProjectChatbot projectId={project.id} />
+            </div>
           </div>
 
           {/* Run History */}

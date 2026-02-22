@@ -19,12 +19,18 @@ function Register({ onLogin, onSwitchToLogin }) {
   const [registerUser, { loading: registering }] = useMutation(REGISTER_USER);
   const [googleAuth, { loading: googleLoading }] = useMutation(GOOGLE_AUTH);
 
+  const trimmedUsername = form.username.trim();
+  const trimmedEmail = form.email.trim().toLowerCase();
+  const trimmedPassword = form.password;
+  const isSendDisabled = sendingOtp || !trimmedUsername || !trimmedEmail || !trimmedPassword || !form.confirmPassword;
+  const isVerifyDisabled = registering || !otpCode.trim();
+
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
     setInfo('');
 
-    if (!form.username.trim() || !form.email.trim() || !form.password) {
+    if (!trimmedUsername || !trimmedEmail || !trimmedPassword) {
       setError('All fields are required.');
       return;
     }
@@ -38,7 +44,7 @@ function Register({ onLogin, onSwitchToLogin }) {
     }
 
     try {
-      const res = await sendOtp({ variables: { email: form.email } });
+      const res = await sendOtp({ variables: { email: trimmedEmail } });
       if (res.data?.sendOtp?.success) {
         setStep(2);
         setInfo(res.data.sendOtp.message);
@@ -63,9 +69,9 @@ function Register({ onLogin, onSwitchToLogin }) {
     try {
       const res = await registerUser({
         variables: {
-          username: form.username,
-          email: form.email,
-          password: form.password,
+          username: trimmedUsername,
+          email: trimmedEmail,
+          password: trimmedPassword,
           otpCode: otpCode.trim(),
         },
       });
@@ -84,9 +90,32 @@ function Register({ onLogin, onSwitchToLogin }) {
   const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
     try {
+      if (!credentialResponse?.credential) {
+        setError('Google sign-up failed.');
+        return;
+      }
       const res = await googleAuth({
         variables: { googleToken: credentialResponse.credential },
       });
+        const handleResendOtp = async () => {
+          setError('');
+          setInfo('');
+          if (!trimmedEmail) {
+            setError('Please enter a valid email first.');
+            setStep(1);
+            return;
+          }
+          try {
+            const res = await sendOtp({ variables: { email: trimmedEmail } });
+            if (res.data?.sendOtp?.success) {
+              setInfo(res.data.sendOtp.message);
+            } else {
+              setError(res.data?.sendOtp?.message || 'Failed to resend OTP.');
+            }
+          } catch (err) {
+            setError(err.message || 'Failed to resend OTP.');
+          }
+        };
       const data = res.data?.googleAuth;
       if (data?.success && data?.token) {
         localStorage.setItem('jwt_token', data.token);
@@ -117,8 +146,13 @@ function Register({ onLogin, onSwitchToLogin }) {
                 <label>Username</label>
                 <input
                   value={form.username}
-                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, username: e.target.value });
+                    if (error) setError('');
+                  }}
                   placeholder="Choose a username"
+                  name="username"
+                  autoComplete="username"
                   required
                   autoFocus
                 />
@@ -128,8 +162,13 @@ function Register({ onLogin, onSwitchToLogin }) {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, email: e.target.value });
+                    if (error) setError('');
+                  }}
                   placeholder="your@email.com"
+                  name="email"
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -138,8 +177,14 @@ function Register({ onLogin, onSwitchToLogin }) {
                 <input
                   type="password"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, password: e.target.value });
+                    if (error) setError('');
+                  }}
                   placeholder="Minimum 8 characters"
+                  name="password"
+                  autoComplete="new-password"
+                  minLength={8}
                   required
                 />
               </div>
@@ -148,15 +193,21 @@ function Register({ onLogin, onSwitchToLogin }) {
                 <input
                   type="password"
                   value={form.confirmPassword}
-                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, confirmPassword: e.target.value });
+                    if (error) setError('');
+                  }}
                   placeholder="Re-enter password"
+                  name="confirmPassword"
+                  autoComplete="new-password"
+                  minLength={8}
                   required
                 />
               </div>
               <button
                 className="btn btn-primary"
                 type="submit"
-                disabled={sendingOtp}
+                disabled={isSendDisabled}
                 style={{ width: '100%', marginTop: 8 }}
               >
                 {sendingOtp ? 'Sending OTP...' : 'Send Verification Code'}
@@ -182,21 +233,34 @@ function Register({ onLogin, onSwitchToLogin }) {
               <label>Verification Code</label>
               <input
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) => {
+                  setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  if (error) setError('');
+                }}
                 placeholder="Enter 6-digit code"
                 required
                 autoFocus
                 maxLength={6}
+                inputMode="numeric"
                 style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.5em' }}
               />
             </div>
             <button
               className="btn btn-primary"
               type="submit"
-              disabled={registering}
+              disabled={isVerifyDisabled}
               style={{ width: '100%', marginTop: 8 }}
             >
               {registering ? 'Creating Account...' : 'Verify & Create Account'}
+            </button>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={handleResendOtp}
+              style={{ marginTop: 12 }}
+              disabled={sendingOtp}
+            >
+              Resend verification code
             </button>
             <button
               type="button"

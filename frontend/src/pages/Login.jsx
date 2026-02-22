@@ -22,10 +22,18 @@ function Login({ onLogin, onSwitchToRegister }) {
 
   const [googleAuth, { loading: googleLoading }] = useMutation(GOOGLE_AUTH);
 
+  const trimmedUsername = form.username.trim();
+  const trimmedPassword = form.password;
+  const isSubmitDisabled = !trimmedUsername || !trimmedPassword || loading;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    tokenAuth({ variables: form });
+    if (!trimmedUsername || !trimmedPassword) {
+      setError('Please enter your username and password.');
+      return;
+    }
+    tokenAuth({ variables: { username: trimmedUsername, password: trimmedPassword } });
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
@@ -61,8 +69,13 @@ function Login({ onLogin, onSwitchToRegister }) {
             <label>Username</label>
             <input
               value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, username: e.target.value });
+                if (error) setError('');
+              }}
               placeholder="Enter username"
+              name="username"
+              autoComplete="username"
               required
               autoFocus
             />
@@ -72,12 +85,17 @@ function Login({ onLogin, onSwitchToRegister }) {
             <input
               type="password"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, password: e.target.value });
+                if (error) setError('');
+              }}
               placeholder="Enter password"
+              name="password"
+              autoComplete="current-password"
               required
             />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 8 }}>
+          <button className="btn btn-primary" type="submit" disabled={isSubmitDisabled} style={{ width: '100%', marginTop: 8 }}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>

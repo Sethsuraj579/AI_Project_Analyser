@@ -215,3 +215,156 @@ export const RUN_ANALYSIS = gql`
     }
   }
 `;
+export const GET_PROJECT_SUMMARY = gql`
+  query GetProjectSummary($projectId: UUID!) {
+    project(id: $projectId) {
+      id
+      summary {
+        id
+        summary
+        generatedAt
+        updatedAt
+      }
+    }
+  }
+`;
+
+export const GET_PROJECT_CHAT_MESSAGES = gql`
+  query GetProjectChatMessages($projectId: UUID!) {
+    project(id: $projectId) {
+      id
+      chatMessages {
+        id
+        role
+        content
+        createdAt
+      }
+    }
+  }
+`;
+
+export const GENERATE_PROJECT_SUMMARY = gql`
+  mutation GenerateProjectSummary($projectId: UUID!) {
+    generateProjectSummary(projectId: $projectId) {
+      projectSummary {
+        id
+        summary
+        generatedAt
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const SEND_CHAT_MESSAGE = gql`
+  mutation SendChatMessage($projectId: UUID!, $message: String!) {
+    sendChatMessage(projectId: $projectId, message: $message) {
+      chatMessage {
+        id
+        role
+        content
+        createdAt
+      }
+      chatbotResponse
+      success
+    }
+  }
+`;
+
+// ── Payment Mutations ───────────────────────────────────────────────────
+
+export const CREATE_RAZORPAY_ORDER_MUTATION = gql`
+  mutation CreateRazorpayOrder($planName: String!) {
+    createRazorpayOrder(planName: $planName) {
+      payment {
+        id
+        user {
+          id
+          email
+        }
+        plan {
+          id
+          name
+          pricePerMonth
+        }
+        amount
+        currency
+        status
+        razorpayOrderId
+        razorpaySubscriptionId
+        createdAt
+      }
+      orderId
+      subscriptionId
+      amount
+      currency
+      success
+      message
+    }
+  }
+`;
+
+export const VERIFY_RAZORPAY_PAYMENT_MUTATION = gql`
+  mutation VerifyRazorpayPayment(
+    $razorpayPaymentId: String!
+    $razorpaySignature: String!
+    $razorpayOrderId: String
+    $razorpaySubscriptionId: String
+  ) {
+    verifyRazorpayPayment(
+      razorpayPaymentId: $razorpayPaymentId
+      razorpaySignature: $razorpaySignature
+      razorpayOrderId: $razorpayOrderId
+      razorpaySubscriptionId: $razorpaySubscriptionId
+    ) {
+      payment {
+        id
+        status
+        createdAt
+        succeededAt
+      }
+      subscription {
+        id
+        plan {
+          id
+          name
+          pricePerMonth
+        }
+        isActive
+        projectsUsed
+        projectsLimit
+        analysesUsed
+        analysesLimit
+        renewsAt
+      }
+      success
+      message
+    }
+  }
+`;
+
+export const GET_CURRENT_SUBSCRIPTION = gql`
+  query GetCurrentSubscription {
+    currentUser {
+      id
+      email
+      subscription {
+        id
+        plan {
+          id
+          name
+          pricePerMonth
+          description
+        }
+        isActive
+        projectsUsed
+        projectsLimit
+        analysesUsed
+        analysesLimit
+        renewsAt
+        createdAt
+      }
+    }
+  }
+`;
