@@ -19,7 +19,7 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000", "http://localhost:5173"]),
 )
-environ.Env.read_env(BASE_DIR / ".env")
+env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 
@@ -119,6 +119,13 @@ GRAPHQL_JWT = {
 GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
 
 # ──────────────────────────────────────────────────────────────
+# Razorpay
+# ──────────────────────────────────────────────────────────────
+RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID", default="")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET", default="")
+RAZORPAY_WEBHOOK_SECRET = env("RAZORPAY_WEBHOOK_SECRET", default="")
+
+# ──────────────────────────────────────────────────────────────
 # Email — console backend for dev, SMTP for production
 # ──────────────────────────────────────────────────────────────
 if DEBUG:
@@ -151,19 +158,46 @@ GRAPHENE = {
 # ──────────────────────────────────────────────────────────────
 # Celery — async task queue backed by Redis (Upstash)
 # ──────────────────────────────────────────────────────────────
-CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = env("REDIS_URL", default="redis://localhost:6379/0")
+import certifi
+
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+
+# Add ssl_cert_reqs parameter for rediss:// URLs with proper certificate validation
+if REDIS_URL.startswith("rediss://"):
+    if "ssl_cert_reqs" not in REDIS_URL:
+        CELERY_BROKER_URL = f"{REDIS_URL}?ssl_cert_reqs=CERT_REQUIRED&ssl_ca_certs={certifi.where()}"
+        CELERY_RESULT_BACKEND = f"{REDIS_URL}?ssl_cert_reqs=CERT_REQUIRED&ssl_ca_certs={certifi.where()}"
+    else:
+        CELERY_BROKER_URL = REDIS_URL
+        CELERY_RESULT_BACKEND = REDIS_URL
+else:
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300  # 5 min hard limit per task
+CELERY_WORKER_POOL = "solo"  # Use solo pool on Windows to avoid multiprocessing issues
 
 # ──────────────────────────────────────────────────────────────
 # Sentry — error monitoring
 # ──────────────────────────────────────────────────────────────
+# environ.Env has issues parsing URLs with @, so fallback to manual parsing
 SENTRY_DSN = env("SENTRY_DSN", default="")
+if not SENTRY_DSN:
+    # Fallback: manually parse .env for SENTRY_DSN
+    try:
+        with open(BASE_DIR / ".env", "r") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("SENTRY_DSN="):
+                    SENTRY_DSN = line.split("=", 1)[1]
+                    break
+    except Exception:
+        SENTRY_DSN = ""
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,

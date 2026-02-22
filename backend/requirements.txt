@@ -8,6 +8,7 @@ whitenoise>=6.6
 
 # Environment & config
 django-environ>=0.11
+python-dotenv>=1.0
 
 # Database (PostgreSQL)
 psycopg2-binary>=2.9
@@ -26,6 +27,9 @@ google-auth>=2.25
 requests>=2.31
 psutil>=5.9
 
+# Payments
+razorpay>=1.4
+
 # Real analysis tools
 radon>=6.0
 bandit>=1.7
@@ -36,6 +40,17 @@ sentry-sdk[django]>=1.40
 
 # Structured logging
 python-json-logger>=2.0
+
+# ML/LLM & Transformer Models
+transformers>=4.35.0
+torch>=2.1.0
+sentence-transformers>=2.2.0
+langchain>=0.1.20
+langchain-community>=0.0.15
+langchain-core>=0.1.0
+langchain-chroma>=0.1.0
+chromadb>=0.4.0
+numpy>=1.24.0
 
 # Testing
 pytest>=7.4
