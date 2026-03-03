@@ -86,6 +86,40 @@ a:hover {
   gap: 16px;
 }
 
+.burger-btn {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.burger-btn span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--text-primary);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.burger-btn.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.burger-btn.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.burger-btn.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
 .app-header nav a {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -320,9 +354,36 @@ a:hover {
   .grid-2, .grid-3, .grid-4 {
     grid-template-columns: 1fr;
   }
+
   .app-header {
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 12px;
+  }
+
+  .burger-btn {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .app-header nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+
+  .app-header nav.open {
+    display: flex;
+  }
+
+  .app-header nav a,
+  .app-header .btn-logout {
+    width: 100%;
+    text-align: left;
   }
 }
 
@@ -450,4 +511,10 @@ a:hover {
   color: var(--text-muted);
   font-size: 0.8rem;
   cursor: default;
+}
+
+/* ── Loading spinner for code-split chunks ──────────────────── */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

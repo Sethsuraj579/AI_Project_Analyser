@@ -1,0 +1,141 @@
+/* ── Comparison Chart Styles ────────────────────────── */
+.comparison-chart-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.comparison-chart-header {
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 16px;
+}
+
+.comparison-chart-header h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.comparison-chart-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.comparison-chart-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  min-height: 450px;
+}
+
+.comparison-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.comparison-chart-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: rgba(0, 212, 255, 0.4);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Recharts Customization ────────────────────────── */
+.recharts-text {
+  fill: var(--text-secondary) !important;
+  font-family: var(--font) !important;
+}
+
+.recharts-cartesian-axis-tick {
+  fill: var(--text-secondary) !important;
+}
+
+.recharts-legend-wrapper {
+  padding-top: 20px !important;
+}
+
+.recharts-legend-item {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Responsive ────────────────────────── */
+@media (max-width: 768px) {
+  .comparison-chart-container {
+    padding: 16px;
+  }
+
+  .comparison-chart-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .comparison-chart-content {
+    min-height: 300px;
+    padding: 12px;
+  }
+
+  .comparison-chart-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.4rem;
+  }
+}

@@ -1,17 +1,25 @@
 .subscription-status {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.subscription-status:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
 }
 
 .subscription-status.loading,
 .subscription-status.error {
   text-align: center;
   padding: 30px 20px;
-  color: #666;
+  color: #9ca3af;
   font-size: 0.95rem;
 }
 
@@ -19,7 +27,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 15px;
 }
@@ -32,28 +40,31 @@
 
 .plan-info h3 {
   margin: 0;
-  font-size: 1rem;
-  color: #555;
+  font-size: 1.1rem;
+  color: #e5e7eb;
   font-weight: 600;
 }
 
 .plan-badge {
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 20px;
   color: white;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .warning-banner {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  color: #a16207;
-  padding: 10px 15px;
-  border-radius: 6px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  padding: 12px 18px;
+  border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 500;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.1);
 }
 
 .usage-section {
@@ -64,60 +75,70 @@
 }
 
 .usage-item {
-  background: #f9fafb;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  background: rgba(102, 126, 234, 0.05);
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  transition: all 0.3s ease;
+}
+
+.usage-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px);
 }
 
 .usage-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-size: 0.9rem;
 }
 
 .usage-label span:first-child {
   font-weight: 600;
-  color: #333;
+  color: #e5e7eb;
 }
 
 .usage-count {
   font-size: 0.85rem;
-  color: #666;
-  background: white;
-  padding: 3px 10px;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .usage-bar {
   width: 100%;
-  height: 6px;
-  background: #e5e7eb;
-  border-radius: 3px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .usage-fill {
   height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
 }
 
 .usage-warning {
   font-size: 0.8rem;
-  color: #dc2626;
+  color: #ef4444;
   font-weight: 500;
   margin-top: 8px;
 }
 
 .renewal-info {
-  background: #dbeafe;
-  border: 1px solid #93c5fd;
-  color: #1e40af;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: #a5b4fc;
   padding: 12px 15px;
   border-radius: 6px;
   font-size: 0.9rem;

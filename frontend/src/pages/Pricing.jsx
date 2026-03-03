@@ -10,23 +10,25 @@ export default function Pricing() {
   const handleSelectPlan = (planName) => {
     // Give user a moment to see the success message, then redirect
     setTimeout(() => {
-      navigate('/projects');
+      navigate('/');
     }, 2000);
   };
 
   return (
-    <div className="pricing-page">
-      <div className="pricing-nav">
-        <button
-          className="back-btn"
-          onClick={() => navigate('/projects')}
-        >
-          ← Back to Projects
-        </button>
-      </div>
+    <>
+      <div className="pricing-page">
+        <div className="pricing-nav">
+          <button
+            className="back-btn"
+            onClick={() => navigate('/')}
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
 
-      <SubscriptionStatus />
-      <PricingPlans onSelectPlan={handleSelectPlan} />
-    </div>
+        <SubscriptionStatus />
+        <PricingPlans onSelectPlan={handleSelectPlan} />
+      </div>
+    </>
   );
 }

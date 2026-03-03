@@ -12,6 +12,7 @@ function NewProject() {
     frontendUrl: '',
     backendUrl: '',
   });
+  const [error, setError] = useState(null);
 
   const [createProject, { loading }] = useMutation(CREATE_PROJECT, {
     refetchQueries: [{ query: GET_ALL_PROJECTS }],
@@ -19,10 +20,19 @@ function NewProject() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
     if (!form.name.trim()) return;
-    const res = await createProject({ variables: form });
-    const newId = res.data?.createProject?.project?.id;
-    if (newId) navigate(`/project/${newId}`);
+    try {
+      const res = await createProject({ variables: form });
+      const result = res.data?.createProject;
+      if (result?.success && result?.project?.id) {
+        navigate(`/project/${result.project.id}`);
+      } else {
+        setError(result?.message || 'Failed to create project. Please try again.');
+      }
+    } catch (err) {
+      setError(err.message || 'An unexpected error occurred.');
+    }
   };
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
@@ -35,6 +45,19 @@ function NewProject() {
       </div>
 
       <form onSubmit={handleSubmit} className="card">
+        {error && (
+          <div style={{
+            padding: '12px 16px',
+            marginBottom: 16,
+            background: 'rgba(255, 23, 68, 0.1)',
+            border: '1px solid var(--accent-red, #ff1744)',
+            borderRadius: 'var(--radius-sm, 8px)',
+            color: 'var(--accent-red, #ff1744)',
+            fontSize: '0.9rem',
+          }}>
+            {error}
+          </div>
+        )}
         <div className="form-group">
           <label>Project Name *</label>
           <input

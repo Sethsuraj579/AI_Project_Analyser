@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
-    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000", "http://localhost:5173"]),
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"]),
 )
 env.read_env(BASE_DIR / ".env")
 
@@ -77,9 +77,25 @@ WSGI_APPLICATION = "project_analyser.wsgi.application"
 # ──────────────────────────────────────────────────────────────
 # Database — PostgreSQL via Neon (falls back to SQLite for local dev)
 # ──────────────────────────────────────────────────────────────
-DATABASES = {
-    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-}
+# Get database URL from environment or use SQLite for local development
+DATABASE_URL = env("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+
+# Configure database based on URL
+if DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://"):
+    DATABASES = {
+        "default": {
+            **env.db_url("DATABASE_URL"),
+            "CONN_MAX_AGE": 0,  # Don't persist connections with Neon pooler
+            "OPTIONS": {
+                "sslmode": "require",
+                "connect_timeout": 10,
+            }
+        }
+    }
+else:
+    DATABASES = {
+        "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -204,6 +220,7 @@ if SENTRY_DSN:
         traces_sample_rate=0.2 if not DEBUG else 1.0,
         profiles_sample_rate=0.1,
         send_default_pii=False,
+        default_integrations=False,
         environment="development" if DEBUG else "production",
     )
 

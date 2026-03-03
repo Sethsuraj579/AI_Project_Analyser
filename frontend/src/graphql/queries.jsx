@@ -196,6 +196,8 @@ export const CREATE_PROJECT = gql`
         id
         name
       }
+      success
+      message
     }
   }
 `;
@@ -211,6 +213,9 @@ export const DELETE_PROJECT = gql`
 export const RUN_ANALYSIS = gql`
   mutation RunAnalysis($projectId: UUID!) {
     runAnalysis(projectId: $projectId) {
+      success
+      message
+      asyncDispatched
       analysisRun {
         id
         status

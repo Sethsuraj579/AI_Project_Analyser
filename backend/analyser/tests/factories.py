@@ -9,11 +9,42 @@ class ProjectFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Project
 
+    user = factory.SubFactory('analyser.tests.factories.UserFactory')
     name = factory.Sequence(lambda n: f"Test Project {n}")
     description = factory.Faker("paragraph")
     repo_url = factory.LazyAttribute(lambda o: f"https://github.com/test/{o.name.lower().replace(' ', '-')}")
     frontend_url = ""
     backend_url = ""
+
+
+from django.contrib.auth import get_user_model
+
+
+from analyser.models import Plan, UserSubscription
+
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = get_user_model()
+        skip_postgeneration_save = True
+    username = factory.Sequence(lambda n: f"user{n}")
+    password = factory.PostGenerationMethodCall('set_password', 'testpass123')
+
+    @factory.post_generation
+    def subscription(self, create, extracted, **kwargs):
+        if not create:
+            return
+        plan, _ = Plan.objects.get_or_create(
+            name="basic",
+            defaults={
+                "max_projects": 10,
+                "max_analyses_per_month": 100,
+                "price_per_month": 0,
+            },
+        )
+        UserSubscription.objects.update_or_create(
+            user=self,
+            defaults={"plan": plan, "is_active": True},
+        )
 
 
 class AnalysisRunFactory(factory.django.DjangoModelFactory):

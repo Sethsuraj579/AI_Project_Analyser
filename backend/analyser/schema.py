@@ -351,26 +351,53 @@ class RunAnalysis(graphene.Mutation):
 
     analysis_run = graphene.Field(AnalysisRunType)
     async_dispatched = graphene.Boolean(description="True if dispatched to Celery queue")
+    success = graphene.Boolean()
+    message = graphene.String()
 
     def mutate(self, info, project_id):
-        _require_auth(info)
-        project = Project.objects.get(id=project_id)
-
-        # Try async dispatch via Celery first
+        user = _require_auth(info)
         try:
-            from .tasks import run_analysis_async
-            run_analysis_async.delay(str(project_id))
-
-            # Create a pending run so the frontend can poll
-            pending_run = AnalysisRun.objects.create(
-                project=project,
-                status="pending",
+            project = Project.objects.get(id=project_id, user=user)
+        except Project.DoesNotExist:
+            return RunAnalysis(
+                analysis_run=None, async_dispatched=False,
+                success=False, message="Project not found."
             )
-            return RunAnalysis(analysis_run=pending_run, async_dispatched=True)
-        except Exception:
-            # Celery not available — fall back to synchronous execution
+
+        # Try async dispatch only when at least one worker is reachable
+        try:
+            from project_analyser.celery import app as celery_app
+            from .tasks import run_analysis_async
+
+            worker_available = bool(celery_app.control.ping(timeout=1.0))
+            if worker_available:
+                run_analysis_async.delay(str(project_id))
+
+                # Create a pending run so the frontend can poll
+                pending_run = AnalysisRun.objects.create(
+                    project=project,
+                    status="pending",
+                )
+                return RunAnalysis(
+                    analysis_run=pending_run, async_dispatched=True,
+                    success=True, message="Analysis dispatched to background queue."
+                )
+            logger.warning("No Celery worker available. Falling back to synchronous analysis for project %s", project_id)
+        except Exception as exc:
+            logger.warning("Celery dispatch unavailable for project %s: %s", project_id, exc)
+
+        try:
             analysis_run = run_full_analysis(project)
-            return RunAnalysis(analysis_run=analysis_run, async_dispatched=False)
+            return RunAnalysis(
+                analysis_run=analysis_run, async_dispatched=False,
+                success=True, message="Analysis completed successfully."
+            )
+        except Exception as exc:
+            logger.error("RunAnalysis sync fallback failed for project %s: %s", project_id, exc, exc_info=True)
+            return RunAnalysis(
+                analysis_run=None, async_dispatched=False,
+                success=False, message=f"Analysis failed: {str(exc)}"
+            )
 
 
 class GenerateProjectSummary(graphene.Mutation):
@@ -1008,7 +1035,26 @@ class LoginUser(graphene.Mutation):
         # Generate JWT token
         from graphql_jwt.shortcuts import get_token
         token = get_token(user)
-        
+
+        # Auto-assign free plan if user has no subscription
+        try:
+            user.subscription
+        except UserSubscription.DoesNotExist:
+            free_plan, _ = Plan.objects.get_or_create(
+                name="free",
+                defaults={
+                    "max_projects": 3,
+                    "max_analyses_per_month": 10,
+                    "price_per_month": 0,
+                },
+            )
+            UserSubscription.objects.create(
+                user=user,
+                plan=free_plan,
+                is_active=True,
+            )
+            logger.info("Auto-assigned free plan to user: %s", user.username)
+
         # Send login notification email asynchronously (non-blocking)
         try:
             send_mail(

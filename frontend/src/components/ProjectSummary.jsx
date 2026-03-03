@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { GET_PROJECT_SUMMARY, GENERATE_PROJECT_SUMMARY } from '../graphql/queries';
+import './ProjectSummary.css';
 
 /**
  * Component to display and generate AI-powered project summary
  */
 function ProjectSummary({ projectId }) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data, loading, refetch } = useQuery(GET_PROJECT_SUMMARY, {
     variables: { projectId },
@@ -17,8 +19,9 @@ function ProjectSummary({ projectId }) {
     onCompleted: (data) => {
       setIsGenerating(false);
       if (data.generateProjectSummary.success) {
-        // Refetch after a delay to get the generated summary
-        setTimeout(() => refetch(), 2000);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        setTimeout(() => refetch(), 1500);
       }
     },
     onError: (error) => {
@@ -41,96 +44,69 @@ function ProjectSummary({ projectId }) {
 
   const summary = data?.project?.summary?.summary;
 
+  const renderSkeletonLoader = () => (
+    <div className="skeleton-loader">
+      <div className="skeleton-line skeleton-line-1"></div>
+      <div className="skeleton-line skeleton-line-2"></div>
+      <div className="skeleton-line skeleton-line-3"></div>
+    </div>
+  );
+
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Project Summary</h3>
+    <div className="project-summary-container">
+      <div className="summary-header">
+        <div className="summary-header-content">
+          <h3 className="summary-title">✨ Project Summary</h3>
+          <p className="summary-subtitle">AI-generated project overview</p>
+        </div>
         <button
+          className={`summary-btn generate-btn ${isGenerating ? 'loading' : ''} ${showSuccess ? 'success' : ''}`}
           onClick={handleGenerateSummary}
           disabled={isGenerating || loading}
-          style={{
-            ...styles.button,
-            opacity: isGenerating || loading ? 0.5 : 1,
-          }}
+          title="Generate a new AI summary"
         >
-          {isGenerating ? 'Generating...' : 'Generate AI Summary'}
+          {showSuccess ? (
+            <>
+              <span className="btn-icon">✓</span>
+              <span>Generated!</span>
+            </>
+          ) : isGenerating ? (
+            <>
+              <span className="btn-spinner"></span>
+              <span>Generating...</span>
+            </>
+          ) : (
+            <>
+              <span className="btn-icon">⚡</span>
+              <span>Generate Summary</span>
+            </>
+          )}
         </button>
       </div>
 
-      <div style={styles.content}>
+      <div className="summary-content">
         {loading ? (
-          <p style={styles.loading}>Loading...</p>
+          renderSkeletonLoader()
         ) : summary ? (
-          <p style={styles.summaryText}>{summary}</p>
+          <div className="summary-text-wrapper">
+            <div className="summary-icon">📄</div>
+            <p className="summary-text">{summary}</p>
+          </div>
         ) : (
-          <div style={styles.emptyState}>
-            <p>No summary yet</p>
-            <p style={styles.emptyHint}>Click "Generate AI Summary" to create one</p>
+          <div className="summary-empty-state">
+            <div className="empty-icon">📋</div>
+            <h4>No Summary Yet</h4>
+            <p>Click the button above to generate an AI-powered summary of your project</p>
+            <div className="empty-features">
+              <span className="feature-tag">🤖 AI Powered</span>
+              <span className="feature-tag">⚡ Fast</span>
+              <span className="feature-tag">✨ Accurate</span>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    backgroundColor: '#0f1419',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '8px',
-    overflow: 'hidden',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(0, 212, 255, 0.05)',
-  },
-  title: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: 600,
-    color: '#fff',
-  },
-  button: {
-    padding: '8px 16px',
-    backgroundColor: '#00d4ff',
-    color: '#000',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  content: {
-    padding: '16px',
-    minHeight: '150px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryText: {
-    margin: 0,
-    color: '#fff',
-    lineHeight: '1.6',
-    fontSize: '14px',
-  },
-  loading: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    margin: 0,
-  },
-  emptyState: {
-    textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
-  emptyHint: {
-    fontSize: '12px',
-    marginTop: '8px',
-    color: 'rgba(255, 255, 255, 0.4)',
-  },
-};
 
 export default ProjectSummary;

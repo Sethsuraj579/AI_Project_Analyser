@@ -176,6 +176,15 @@ class AnalysisRun(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     overall_score = models.FloatField(null=True, blank=True)
     overall_grade = models.CharField(max_length=2, blank=True, default="")
+    suggested_improvements = models.JSONField(
+        default=list, 
+        blank=True, 
+        help_text="Auto-generated suggestions for improvement based on weak dimensions"
+    )
+    embeddings_generated = models.BooleanField(
+        default=False,
+        help_text="Whether RAG embeddings have been generated for this run"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

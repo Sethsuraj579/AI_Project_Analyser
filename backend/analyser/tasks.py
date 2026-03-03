@@ -102,30 +102,67 @@ def _grade_interpretation(grade):
 @shared_task(bind=True, max_retries=2)
 def generate_project_embeddings(self, project_id):
     """
-    Generate embeddings for project data for semantic search & chatbot context.
+    Generate embeddings for project data and analysis results for RAG chatbot.
+    Stores embeddings in Chroma vector DB for semantic search.
     """
-    from .models import Project
+    from .models import Project, AnalysisRun
 
     try:
         project = Project.objects.get(id=project_id)
         
-        # Create embedding for project
-        project_text = f"{project.name} {project.description}"
-        embeddings = model_manager.get_embeddings(project_text)
+        # Get latest analysis for richer context
+        latest_run = project.analysis_runs.filter(status='completed').order_by('-completed_at').first()
         
-        # Store in Chroma (vector DB)
+        # Build comprehensive text for embeddings
+        text_parts = [
+            f"Project: {project.name}",
+            project.description or "",
+        ]
+        
+        # Add analysis insights if available
+        if latest_run:
+            text_parts.append(f"Overall Score: {latest_run.overall_score:.1f}/100")
+            text_parts.append(f"Grade: {latest_run.overall_grade}")
+            
+            # Add metric details
+            for metric in latest_run.metrics.all():
+                text_parts.append(
+                    f"{metric.get_dimension_display()}: {metric.normalised_score:.0f}/100 ({metric.grade})"
+                )
+        
+        project_text = " ".join([t for t in text_parts if t])
+        
+        # Generate embeddings
+        embeddings_array = model_manager.get_embeddings(project_text)
+        if embeddings_array is None:
+            logger.warning(f"Could not generate embeddings for project {project_id}")
+            return {"project_id": str(project_id), "status": "failed"}
+        
+        # Convert numpy array to list for Chroma
+        embeddings_list = embeddings_array.tolist() if hasattr(embeddings_array, 'tolist') else list(embeddings_array)
+        
+        # Store in Chroma vector DB
         chroma_client = model_manager.get_chroma_client()
-        collection = chroma_client.get_or_create_collection(name="projects")
+        collection = chroma_client.get_or_create_collection(name="project_insights")
         
         collection.add(
             ids=[str(project_id)],
             documents=[project_text],
-            embeddings=[embeddings],
-            metadatas=[{"project_id": str(project_id), "name": project.name}]
+            embeddings=[embeddings_list],
+            metadatas=[{
+                "project_id": str(project_id),
+                "name": project.name,
+                "score": latest_run.overall_score if latest_run else 0
+            }]
         )
         
-        logger.info(f"Embeddings generated for project {project_id}")
-        return {"project_id": str(project_id), "status": "embeddings_created"}
+        # Mark embeddings as generated on the latest run
+        if latest_run:
+            latest_run.embeddings_generated = True
+            latest_run.save(update_fields=['embeddings_generated'])
+        
+        logger.info(f"Embeddings generated and stored for project {project_id}")
+        return {"project_id": str(project_id), "status": "success"}
     
     except Exception as exc:
         logger.error(f"Error generating embeddings for project {project_id}: {exc}")

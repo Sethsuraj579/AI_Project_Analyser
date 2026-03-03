@@ -583,6 +583,14 @@ def run_full_analysis(project):
         run.save()
 
         logger.info("Analysis run %s completed: score=%.1f grade=%s", run.id, overall_score, run.overall_grade)
+        
+        # Generate project embeddings for chatbot context
+        from .tasks import generate_project_embeddings
+        try:
+            generate_project_embeddings.delay(str(project.id))
+            logger.info("Queued embedding generation for project %s", project.id)
+        except Exception as e:
+            logger.error(f"Could not queue embedding generation: {e}")
 
     except Exception as exc:
         logger.error("Analysis run %s failed: %s", run.id, exc, exc_info=True)

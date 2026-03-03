@@ -9,6 +9,7 @@ function ProjectList() {
   const { loading, error, data, refetch } = useQuery(GET_ALL_PROJECTS);
   const [deleteProject] = useMutation(DELETE_PROJECT);
   const [runAnalysis, { loading: analysing }] = useMutation(RUN_ANALYSIS);
+  const [analysisError, setAnalysisError] = React.useState(null);
   const navigate = useNavigate();
 
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
@@ -23,8 +24,18 @@ function ProjectList() {
   };
 
   const handleRunAnalysis = async (projectId) => {
-    await runAnalysis({ variables: { projectId } });
-    refetch();
+    setAnalysisError(null);
+    try {
+      const { data: result } = await runAnalysis({ variables: { projectId } });
+      const resp = result?.runAnalysis;
+      if (resp && !resp.success) {
+        setAnalysisError(resp.message || 'Analysis failed.');
+        return;
+      }
+      refetch();
+    } catch (err) {
+      setAnalysisError(err.message || 'An unexpected error occurred.');
+    }
   };
 
   if (projects.length === 0) {
@@ -45,6 +56,12 @@ function ProjectList() {
         <h2>Projects Dashboard</h2>
         <p>Real-time AI-powered project analysis across 7 dimensions</p>
       </div>
+
+      {analysisError && (
+        <div style={{ background: '#fee', color: '#c00', padding: '10px 16px', borderRadius: 8, marginBottom: 16, fontSize: '0.9rem' }}>
+          {analysisError}
+        </div>
+      )}
 
       <div className="grid-2">
         {projects.map((project) => {

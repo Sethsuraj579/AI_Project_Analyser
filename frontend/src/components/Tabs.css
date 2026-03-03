@@ -1,0 +1,177 @@
+/* ── Tabs Styles ────────────────────────── */
+.tabs-container {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0;
+  margin: 0;
+  flex-wrap: nowrap;
+}
+
+.tabs-header::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabs-header::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.tabs-header::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.tabs-header::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tab-button:hover {
+  color: var(--text-primary);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.tab-button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-alt));
+  animation: slideIn 0.3s ease;
+}
+
+.tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.tab-label {
+  display: inline;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.tab-button.active .tab-badge {
+  background: var(--accent-alt);
+  color: var(--text-primary);
+}
+
+.tabs-content {
+  padding: 24px;
+  animation: fadeIn 0.3s ease;
+  background: var(--bg-card);
+}
+
+/* ── Animations ────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ── Responsive ────────────────────────── */
+@media (max-width: 768px) {
+  .tabs-header {
+    gap: 0;
+  }
+
+  .tab-button {
+    padding: 12px 14px;
+    font-size: 0.8rem;
+  }
+
+  .tab-icon {
+    font-size: 0.9rem;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-button:has(.tab-label) .tab-label {
+    display: inline;
+  }
+
+  .tabs-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-button {
+    padding: 10px 10px;
+  }
+
+  .tab-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.65rem;
+  }
+}

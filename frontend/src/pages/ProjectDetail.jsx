@@ -19,6 +19,7 @@ function ProjectDetail() {
     variables: { id },
   });
   const [runAnalysis, { loading: analysing }] = useMutation(RUN_ANALYSIS);
+  const [analysisError, setAnalysisError] = React.useState(null);
 
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
   if (error) return <div className="empty-state"><h3>Error</h3><p>{error.message}</p></div>;
@@ -33,8 +34,18 @@ function ProjectDetail() {
   const runs = project.analysisRuns || [];
 
   const handleRunAnalysis = async () => {
-    await runAnalysis({ variables: { projectId: project.id } });
-    refetch();
+    setAnalysisError(null);
+    try {
+      const { data: result } = await runAnalysis({ variables: { projectId: project.id } });
+      const resp = result?.runAnalysis;
+      if (resp && !resp.success) {
+        setAnalysisError(resp.message || 'Analysis failed.');
+        return;
+      }
+      refetch();
+    } catch (err) {
+      setAnalysisError(err.message || 'An unexpected error occurred.');
+    }
   };
 
   return (
@@ -54,6 +65,11 @@ function ProjectDetail() {
           >
             {analysing ? '⏳ Analysing...' : '▶ Run Analysis'}
           </button>
+          {analysisError && (
+            <div style={{ background: '#fee', color: '#c00', padding: '8px 14px', borderRadius: 8, fontSize: '0.85rem', marginTop: 8 }}>
+              {analysisError}
+            </div>
+          )}
         </div>
       </div>
 

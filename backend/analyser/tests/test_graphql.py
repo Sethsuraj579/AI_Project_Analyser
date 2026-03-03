@@ -6,7 +6,7 @@ import pytest
 from django.test import RequestFactory
 from graphene_django.utils.testing import GraphQLTestCase
 from django.contrib.auth.models import User
-from analyser.models import Project
+from analyser.models import Project, Plan, UserSubscription
 from .factories import ProjectFactory, AnalysisRunFactory, MetricSnapshotFactory
 
 
@@ -14,8 +14,19 @@ from .factories import ProjectFactory, AnalysisRunFactory, MetricSnapshotFactory
 class TestGraphQLQueries(GraphQLTestCase):
     GRAPHQL_URL = "/graphql/"
 
+    def setUp(self):
+        self.user = User.objects.create_user(username="queryuser", password="testpass123")
+        plan, _ = Plan.objects.get_or_create(
+            name="basic",
+            defaults={"max_projects": 10, "max_analyses_per_month": 100, "price_per_month": 0},
+        )
+        UserSubscription.objects.update_or_create(
+            user=self.user, defaults={"plan": plan, "is_active": True}
+        )
+        self.client.force_login(self.user)
+
     def test_all_projects_query(self):
-        ProjectFactory.create_batch(3)
+        ProjectFactory.create_batch(3, user=self.user)
         response = self.query(
             """
             query {
@@ -31,7 +42,7 @@ class TestGraphQLQueries(GraphQLTestCase):
         assert len(content["data"]["allProjects"]) == 3
 
     def test_single_project_query(self):
-        project = ProjectFactory(name="Test Project")
+        project = ProjectFactory(name="Test Project", user=self.user)
         response = self.query(
             """
             query($id: UUID!) {
@@ -64,7 +75,8 @@ class TestGraphQLQueries(GraphQLTestCase):
         assert len(content["data"]["dimensionConfigs"]) == 7
 
     def test_project_with_latest_run(self):
-        run = AnalysisRunFactory(overall_score=90.0, overall_grade="A+")
+        project = ProjectFactory(user=self.user)
+        run = AnalysisRunFactory(project=project, overall_score=90.0, overall_grade="A+")
         MetricSnapshotFactory(analysis_run=run, dimension="frontend")
         response = self.query(
             """
@@ -96,6 +108,13 @@ class TestGraphQLMutations(GraphQLTestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(username="testuser", password="testpass123")
+        plan, _ = Plan.objects.get_or_create(
+            name="basic",
+            defaults={"max_projects": 10, "max_analyses_per_month": 100, "price_per_month": 0},
+        )
+        UserSubscription.objects.update_or_create(
+            user=self.user, defaults={"plan": plan, "is_active": True}
+        )
 
     def _get_token(self):
         response = self.query(
@@ -108,7 +127,8 @@ class TestGraphQLMutations(GraphQLTestCase):
             """
         )
         content = json.loads(response.content)
-        return content["data"]["tokenAuth"]["token"]
+        token = content["data"]["tokenAuth"]["token"]
+        return token
 
     def test_create_project_unauthenticated_fails(self):
         response = self.query(
