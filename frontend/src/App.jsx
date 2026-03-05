@@ -9,6 +9,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ComparisonPage = lazy(() => import('./pages/ComparisonPage'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 function LoadingFallback() {
   return (
@@ -108,6 +109,9 @@ function App() {
           <NavLink to="/pricing" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
             💳 Pricing
           </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
+            ⚙️ Settings
+          </NavLink>
           <button className="btn-logout" onClick={handleLogout}>
             Logout
           </button>
@@ -121,6 +125,7 @@ function App() {
             <Route path="/new" element={<NewProject />} />
             <Route path="/comparison" element={<ComparisonPage />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Suspense>
       </main>

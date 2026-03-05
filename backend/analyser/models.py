@@ -407,3 +407,145 @@ class Invoice(models.Model):
     
     def __str__(self):
         return f"Invoice {self.razorpay_invoice_id} - {self.user.email} - {self.amount} {self.currency} ({self.status})"
+
+# ──────────────────────────────────────────────────────────────
+# Settings Models
+# ──────────────────────────────────────────────────────────────
+
+
+class UserProfile(models.Model):
+    """Extended user profile information."""
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    bio = models.TextField(blank=True, default="", help_text="User bio or about text")
+    avatar_url = models.URLField(blank=True, default="", help_text="URL to user's profile image")
+    phone_number = models.CharField(max_length=20, blank=True, default="")
+    company = models.CharField(max_length=255, blank=True, default="")
+    location = models.CharField(max_length=255, blank=True, default="")
+    website = models.URLField(blank=True, default="")
+    
+    # Account settings
+    two_factor_enabled = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ["-updated_at"]
+    
+    def __str__(self):
+        return f"Profile for {self.user.username}"
+
+
+class UserPreferences(models.Model):
+    """User notification and app preferences."""
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="preferences")
+    
+    # Notification preferences
+    email_notifications = models.BooleanField(default=True, help_text="Receive email notifications")
+    project_updates = models.BooleanField(default=True, help_text="Notify when projects are analyzed")
+    marketing_emails = models.BooleanField(default=False, help_text="Receive marketing emails")
+    weekly_digest = models.BooleanField(default=True, help_text="Receive weekly summary emails")
+    
+    # App preferences
+    dark_theme = models.BooleanField(default=True, help_text="Enable dark theme")
+    notifications_popup = models.BooleanField(default=True, help_text="Show desktop notifications")
+    
+    # Privacy settings
+    public_profile = models.BooleanField(default=False, help_text="Profile visible to public")
+    show_projects_publicly = models.BooleanField(default=False, help_text="Show projects on public profile")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["-updated_at"]
+    
+    def __str__(self):
+        return f"Preferences for {self.user.username}"
+
+
+class ContactMessage(models.Model):
+    """User contact form submissions."""
+    
+    SUBJECT_CHOICES = [
+        ("technical", "Technical Support"),
+        ("billing", "Billing Question"),
+        ("feature", "Feature Request"),
+        ("bug", "Bug Report"),
+        ("general", "General Inquiry"),
+    ]
+    
+    STATUS_CHOICES = [
+        ("new", "New"),
+        ("open", "Open"),
+        ("in_progress", "In Progress"),
+        ("resolved", "Resolved"),
+        ("closed", "Closed"),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="contact_messages")
+    
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    subject = models.CharField(max_length=20, choices=SUBJECT_CHOICES)
+    message = models.TextField()
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
+    response = models.TextField(blank=True, default="", help_text="Admin response to the message")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["status"]),
+        ]
+    
+    def __str__(self):
+        return f"Message from {self.name} - {self.get_subject_display()} ({self.status})"
+
+
+class FAQ(models.Model):
+    """Frequently Asked Questions for help section."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    question = models.CharField(max_length=500)
+    answer = models.TextField()
+    category = models.CharField(
+        max_length=50,
+        default="general",
+        choices=[
+            ("general", "General"),
+            ("features", "Features"),
+            ("billing", "Billing"),
+            ("technical", "Technical"),
+            ("account", "Account"),
+            ("security", "Security"),
+        ]
+    )
+    
+    # Metadata
+    order = models.IntegerField(default=0, help_text="Display order")
+    is_active = models.BooleanField(default=True)
+    views = models.IntegerField(default=0, help_text="Number of times this FAQ was viewed")
+    helpful_count = models.IntegerField(default=0, help_text="Times marked as helpful")
+    unhelpful_count = models.IntegerField(default=0, help_text="Times marked as unhelpful")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["category", "order"]
+        verbose_name = "FAQ"
+        verbose_name_plural = "FAQs"
+    
+    def __str__(self):
+        return self.question

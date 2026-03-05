@@ -15,7 +15,7 @@ from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.utils import timezone
 from datetime import timedelta
-from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice
+from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ
 from .engine import run_full_analysis, DIMENSION_CONFIG
 from .razorpay_utils import create_order, create_subscription, verify_payment_signature
 
@@ -168,6 +168,47 @@ class InvoiceType(DjangoObjectType):
         fields = "__all__"
 
 
+class UserProfileType(DjangoObjectType):
+    """Extended user profile information."""
+    class Meta:
+        model = UserProfile
+        fields = "__all__"
+
+
+class UserPreferencesType(DjangoObjectType):
+    """User notification and app preferences."""
+    class Meta:
+        model = UserPreferences
+        fields = "__all__"
+
+
+class ContactMessageType(DjangoObjectType):
+    """Contact form submissions."""
+    class Meta:
+        model = ContactMessage
+        fields = "__all__"
+
+
+class FAQType(DjangoObjectType):
+    """FAQ items for help section."""
+    class Meta:
+        model = FAQ
+        fields = "__all__"
+
+
+class UserInfoType(graphene.ObjectType):
+    """Complete user information combining User, Profile, and Preferences."""
+    id = graphene.Int()
+    username = graphene.String()
+    email = graphene.String()
+    first_name = graphene.String()
+    last_name = graphene.String()
+    profile = graphene.Field(UserProfileType)
+    preferences = graphene.Field(UserPreferencesType)
+    subscription = graphene.Field(UserSubscriptionType)
+    created_at = graphene.String()
+
+
 # ──────────────────────────────────────────────────────────────
 # Queries (public — read-only)
 # ──────────────────────────────────────────────────────────────
@@ -183,6 +224,11 @@ class Query(graphene.ObjectType):
     # Subscription/Plan queries
     all_plans = graphene.List(PlanType)
     my_subscription = graphene.Field(UserSubscriptionType)
+    
+    # User settings queries
+    user_info = graphene.Field(UserInfoType, description="Get complete user information")
+    faqs = graphene.List(FAQType, category=graphene.String(), description="Get FAQ items")
+    contact_messages = graphene.List(ContactMessageType, description="Get user's contact messages")
 
     # Trends for a project
     trends = graphene.List(
@@ -247,6 +293,39 @@ class Query(graphene.ObjectType):
             except UserSubscription.DoesNotExist:
                 return None
         return None
+    
+    def resolve_user_info(self, info):
+        user = info.context.user
+        if not user or not user.is_authenticated:
+            raise Exception("Authentication required. Please provide a valid JWT token.")
+        
+        # Ensure profile and preferences exist
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        preferences, _ = UserPreferences.objects.get_or_create(user=user)
+        
+        return UserInfoType(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            profile=profile,
+            preferences=preferences,
+            subscription=user.subscription if hasattr(user, 'subscription') else None,
+            created_at=user.date_joined.isoformat()
+        )
+    
+    def resolve_faqs(self, info, category=None):
+        qs = FAQ.objects.filter(is_active=True)
+        if category:
+            qs = qs.filter(category=category)
+        return qs.order_by('category', 'order')
+    
+    def resolve_contact_messages(self, info):
+        user = info.context.user
+        if not user or not user.is_authenticated:
+            raise Exception("Authentication required.")
+        return user.contact_messages.all()
 
 
 # ──────────────────────────────────────────────────────────────
