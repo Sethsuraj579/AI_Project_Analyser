@@ -44,6 +44,54 @@ function ProjectSummary({ projectId }) {
 
   const summary = data?.project?.summary?.summary;
 
+  const renderPointwiseSummary = (summaryText) => {
+    const lines = (summaryText || '').split('\n').map((line) => line.trim()).filter(Boolean);
+    const blocks = [];
+    let currentItems = [];
+
+    const flushList = () => {
+      if (currentItems.length > 0) {
+        blocks.push({ type: 'list', items: [...currentItems] });
+        currentItems = [];
+      }
+    };
+
+    lines.forEach((line) => {
+      if (line.startsWith('-') || line.startsWith('*')) {
+        currentItems.push(line.replace(/^[-*]\s*/, ''));
+      } else if (line.startsWith('•')) {
+        currentItems.push(line.replace(/^•\s*/, ''));
+      } else {
+        flushList();
+        blocks.push({ type: 'heading', text: line });
+      }
+    });
+
+    flushList();
+
+    return (
+      <div className="summary-pointwise" aria-label="Project summary point-wise format">
+        {blocks.map((block, index) => {
+          if (block.type === 'heading') {
+            return (
+              <h4 className="summary-section-title" key={`heading-${index}`}>
+                {block.text}
+              </h4>
+            );
+          }
+
+          return (
+            <ul className="summary-points" key={`list-${index}`}>
+              {block.items.map((item, itemIndex) => (
+                <li key={`point-${index}-${itemIndex}`}>{item}</li>
+              ))}
+            </ul>
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderSkeletonLoader = () => (
     <div className="skeleton-loader">
       <div className="skeleton-line skeleton-line-1"></div>
@@ -90,7 +138,7 @@ function ProjectSummary({ projectId }) {
         ) : summary ? (
           <div className="summary-text-wrapper">
             <div className="summary-icon">📄</div>
-            <p className="summary-text">{summary}</p>
+            <div className="summary-text">{renderPointwiseSummary(summary)}</div>
           </div>
         ) : (
           <div className="summary-empty-state">

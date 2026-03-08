@@ -11,7 +11,7 @@ import TrendLineChart from '../components/TrendLineChart';
 import MetricDetailCard from '../components/MetricDetailCard';
 import ScoreHeatmap from '../components/ScoreHeatmap';
 import ProjectSummary from '../components/ProjectSummary';
-import ProjectChatbot from '../components/ProjectChatbot';
+import ProjectReportDownload from '../components/ProjectReportDownload';
 
 function ProjectDetail() {
   const { id } = useParams();
@@ -140,13 +140,13 @@ function ProjectDetail() {
             ))}
           </div>
 
-          {/* Row 6: AI Summary & Chatbot */}
+          {/* Row 6: AI Summary & PDF Report */}
           <div className="grid-2" style={{ marginBottom: 24 }}>
             <div className="card">
               <ProjectSummary projectId={project.id} />
             </div>
             <div className="card">
-              <ProjectChatbot projectId={project.id} />
+              <ProjectReportDownload projectId={project.id} projectName={project.name} />
             </div>
           </div>
 

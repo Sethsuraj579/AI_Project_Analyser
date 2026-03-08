@@ -20,6 +20,20 @@ const PaymentForm = ({ plan, onSuccess, onError }) => {
   const [createRazorpayOrder] = useMutation(CREATE_RAZORPAY_ORDER_MUTATION);
   const [verifyRazorpayPayment] = useMutation(VERIFY_RAZORPAY_PAYMENT_MUTATION);
 
+  const toUserFriendlyError = (err, fallbackMessage) => {
+    const message = (err?.message || '').toLowerCase();
+    if (message.includes('authentication required') || message.includes('jwt')) {
+      return 'Your session has expired. Please sign in again and retry payment.';
+    }
+    if (message.includes('status code 400')) {
+      return 'Payment request was rejected by the server. Please refresh and try again.';
+    }
+    if (message.includes('network') || message.includes('failed to fetch')) {
+      return 'Unable to reach the server. Please check your connection and try again.';
+    }
+    return err?.message || fallbackMessage;
+  };
+
   useEffect(() => {
     if (window.Razorpay) {
       setScriptLoaded(true);
@@ -56,12 +70,20 @@ const PaymentForm = ({ plan, onSuccess, onError }) => {
     setErrorMessage(null);
 
     try {
-      const { data: orderData } = await createRazorpayOrder({
+      const { data: orderData, errors } = await createRazorpayOrder({
         variables: { planName: plan.name.toLowerCase() },
       });
 
+      if (errors) {
+        throw new Error(errors[0]?.message || 'Failed to create order');
+      }
+
+      if (!orderData?.createRazorpayOrder) {
+        throw new Error('Invalid response from server');
+      }
+
       if (!orderData.createRazorpayOrder.success) {
-        throw new Error(orderData.createRazorpayOrder.message);
+        throw new Error(orderData.createRazorpayOrder.message || 'Failed to create order');
       }
 
       const {
@@ -84,23 +106,28 @@ const PaymentForm = ({ plan, onSuccess, onError }) => {
         subscription_id: subscriptionId || undefined,
         handler: async (response) => {
           try {
-            const { data: verifyData } = await verifyRazorpayPayment({
+            const { data: verifyData, errors: verifyErrors } = await verifyRazorpayPayment({
               variables: {
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySubscriptionId: response.razorpay_subscription_id,
+                razorpayOrderId: response.razorpay_order_id || null,
+                razorpaySubscriptionId: response.razorpay_subscription_id || null,
               },
             });
 
-            if (verifyData.verifyRazorpayPayment.success) {
-              onSuccess(verifyData.verifyRazorpayPayment.payment);
+            if (verifyErrors) {
+              throw new Error(verifyErrors[0]?.message || 'Verification failed');
+            }
+
+            if (verifyData?.verifyRazorpayPayment?.success) {
+              if (onSuccess) onSuccess(verifyData.verifyRazorpayPayment.payment);
             } else {
-              throw new Error(verifyData.verifyRazorpayPayment.message);
+              const errorMsg = verifyData?.verifyRazorpayPayment?.message || 'Payment verification failed.';
+              throw new Error(errorMsg);
             }
           } catch (err) {
-            setErrorMessage(err.message || 'Payment verification failed.');
-            onError(err);
+            setErrorMessage(toUserFriendlyError(err, 'Payment verification failed.'));
+            if (onError) onError(err);
           } finally {
             setIsProcessing(false);
           }
@@ -125,12 +152,10 @@ const PaymentForm = ({ plan, onSuccess, onError }) => {
       });
       razorpay.open();
     } catch (err) {
-      setErrorMessage(err.message || 'Payment processing failed.');
-      onError(err);
-    } finally {
-      if (!window.Razorpay) {
-        setIsProcessing(false);
-      }
+      const errorMsg = toUserFriendlyError(err, 'Payment processing failed.');
+      setErrorMessage(errorMsg);
+      if (onError) onError(err);
+      setIsProcessing(false);
     }
   };
 

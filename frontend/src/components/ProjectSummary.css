@@ -151,7 +151,36 @@
   line-height: 1.8;
   color: var(--text-primary);
   letter-spacing: 0.3px;
-  text-align: justify;
+  text-align: left;
+  font-family: var(--font-pro);
+}
+
+.summary-pointwise {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-section-title {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #d9e8ff;
+  letter-spacing: 0.02em;
+}
+
+.summary-points {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-points li {
+  color: var(--text-primary);
+  line-height: 1.65;
+  font-size: 0.93rem;
 }
 
 @keyframes slideUp {

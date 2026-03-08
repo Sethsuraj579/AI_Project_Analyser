@@ -51,6 +51,7 @@ langchain-core>=0.1.0
 langchain-chroma>=0.1.0
 chromadb>=0.4.0
 numpy>=1.24.0
+reportlab>=4.0
 
 # Testing
 pytest>=7.4
@@ -73,3 +74,4 @@ pytest-django>=4.0
 pytest-cov>=3.0
 factory-boy>=3.2
 coverage>=6.0
+reportlab>=3.5

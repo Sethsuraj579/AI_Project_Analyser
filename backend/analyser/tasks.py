@@ -39,39 +39,85 @@ def run_analysis_async(self, project_id):
 @shared_task(bind=True, max_retries=2)
 def generate_project_summary(self, project_id):
     """
-    Generate a concise point-wise project summary from analysis data.
+    Generate a professional, structured project summary from analysis data.
     """
     from .models import Project, ProjectSummary, AnalysisRun
 
     try:
         project = Project.objects.get(id=project_id)
-        
+
         # Get the latest analysis run
         latest_run = project.analysis_runs.filter(status='completed').order_by('-completed_at').first()
-        
+
         if not latest_run:
-            report = f"""{project.name}
-
-Status: Not Analyzed
-- Run an analysis first to generate a detailed quality report
-- Analysis evaluates 7 dimensions: Frontend, Backend, Database, Structure, API, Integration, Security"""
+            report = (
+                f"Executive Summary: {project.name}\n\n"
+                "Current Status\n"
+                "- Analysis has not been completed yet.\n"
+                "- Run a full analysis to generate validated quality insights across all dimensions.\n\n"
+                "Recommended Next Step\n"
+                "- Start the analysis run and review the first baseline report before planning improvements."
+            )
         else:
-            # Build point-wise summary
-            report = f"""{project.name}
+            metrics = list(latest_run.metrics.all())
+            metrics_by_score = sorted(metrics, key=lambda m: m.normalised_score)
+            strongest = sorted(metrics, key=lambda m: m.normalised_score, reverse=True)[:2]
+            weakest = metrics_by_score[:2]
 
-Project Details
-- Description: {project.description or 'N/A'}
-- Repository: {project.repo_url or 'Not provided'}
+            summary_lines = [
+                f"Executive Summary: {project.name}",
+                "",
+                "Project Overview",
+                f"- Description: {project.description or 'Not provided'}",
+                f"- Repository: {project.repo_url or 'Not provided'}",
+                f"- Overall Quality Score: {latest_run.overall_score:.1f}/100 ({latest_run.overall_grade} - {_grade_interpretation(latest_run.overall_grade)})",
+                "",
+                "Dimension Performance",
+            ]
 
-Overall Score: {latest_run.overall_score:.1f}/100 (Grade: {latest_run.overall_grade})
+            for metric in sorted(metrics, key=lambda m: m.dimension):
+                unit = metric.unit or ""
+                raw_value = f"{metric.raw_value:.0f}{unit}" if metric.raw_value is not None else "N/A"
+                summary_lines.append(
+                    f"- {metric.get_dimension_display()}: {metric.normalised_score:.1f}/100 ({metric.grade}); measured value: {raw_value}"
+                )
 
-Quality Dimensions
-"""
-            
-            # Add each dimension as a bullet point
-            for metric in latest_run.metrics.all():
-                report += f"\n✓ {metric.dimension.upper()}: {metric.normalised_score:.1f}/100 ({metric.grade})"
-                report += f" - {metric.raw_value:.0f}{metric.unit}"
+            summary_lines.extend([
+                "",
+                "Key Strengths",
+            ])
+            if strongest:
+                for metric in strongest:
+                    summary_lines.append(
+                        f"- {metric.get_dimension_display()} is performing well at {metric.normalised_score:.1f}/100."
+                    )
+            else:
+                summary_lines.append("- No strength insights are available yet.")
+
+            summary_lines.extend([
+                "",
+                "Primary Risks",
+            ])
+            if weakest:
+                for metric in weakest:
+                    summary_lines.append(
+                        f"- {metric.get_dimension_display()} requires attention with a score of {metric.normalised_score:.1f}/100."
+                    )
+            else:
+                summary_lines.append("- No risk insights are available yet.")
+
+            summary_lines.extend([
+                "",
+                "Priority Actions",
+            ])
+            if weakest:
+                for metric in weakest:
+                    summary_lines.append(
+                        f"- Define and execute an improvement plan for {metric.get_dimension_display()} in the next sprint."
+                    )
+            summary_lines.append("- Re-run analysis after implementing changes to verify measurable improvement.")
+
+            report = "\n".join(summary_lines)
         
         # Save the report
         ProjectSummary.objects.update_or_create(

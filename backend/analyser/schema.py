@@ -859,11 +859,13 @@ class CreateRazorpayOrder(graphene.Mutation):
         try:
             subscription_obj = create_subscription(user, plan)
             subscription_id = subscription_obj.get("id")
-            order_id = subscription_obj.get("order_id")
+            # Note: Subscriptions don't have order_id in the create response
+            order_id = subscription_obj.get("order_id")  # Will be None for subscriptions
             amount = subscription_obj.get("amount")
             currency = subscription_obj.get("currency")
 
             if not subscription_id:
+                # Fallback to creating a one-time order
                 order = create_order(user, plan)
                 order_id = order.get("id")
                 amount = order.get("amount")
@@ -874,13 +876,19 @@ class CreateRazorpayOrder(graphene.Mutation):
                 plan=plan,
                 amount=plan.price_per_month,
                 currency="INR",
-                razorpay_order_id=order_id,
-                razorpay_subscription_id=subscription_id or "",
+                # Keep nullable Razorpay IDs as NULL to avoid unique collisions on blank strings.
+                razorpay_order_id=order_id or None,
+                razorpay_subscription_id=subscription_id or None,
                 description=f"Upgrade to {plan.name} plan",
                 status="pending",
             )
 
-            logger.info("Created Razorpay order %s for user %s", order_id, user.email)
+            logger.info(
+                "Created payment record for user %s: subscription_id=%s, order_id=%s",
+                user.email,
+                subscription_id,
+                order_id or 'None'
+            )
 
             return CreateRazorpayOrder(
                 payment=payment,
@@ -893,7 +901,7 @@ class CreateRazorpayOrder(graphene.Mutation):
             )
 
         except Exception as e:
-            logger.error("Error creating Razorpay order: %s", e)
+            logger.error("Error creating Razorpay order: %s", e, exc_info=True)
             return CreateRazorpayOrder(
                 payment=None,
                 order_id=None,
@@ -901,7 +909,7 @@ class CreateRazorpayOrder(graphene.Mutation):
                 amount=None,
                 currency=None,
                 success=False,
-                message=f"Error creating payment: {str(e)}",
+                message="Unable to initiate payment at the moment. Please try again.",
             )
 
 
@@ -923,6 +931,15 @@ class VerifyRazorpayPayment(graphene.Mutation):
         user = _require_auth(info)
 
         try:
+            # Log the verification attempt
+            logger.info(
+                "Verifying payment for user %s: payment_id=%s, order_id=%s, subscription_id=%s",
+                user.email,
+                razorpay_payment_id,
+                razorpay_order_id,
+                razorpay_subscription_id
+            )
+
             params = {
                 "razorpay_payment_id": razorpay_payment_id,
                 "razorpay_signature": razorpay_signature,
@@ -932,22 +949,65 @@ class VerifyRazorpayPayment(graphene.Mutation):
             if razorpay_subscription_id:
                 params["razorpay_subscription_id"] = razorpay_subscription_id
 
+            # Verify signature
+            logger.info("Verifying signature with params: %s", {k: v for k, v in params.items() if k != 'razorpay_signature'})
             verify_payment_signature(params)
+            logger.info("✅ Signature verified successfully")
 
-            payment = Payment.objects.filter(
-                razorpay_order_id=razorpay_order_id,
-                user=user,
-            ).first() or Payment.objects.filter(
-                razorpay_subscription_id=razorpay_subscription_id,
-                user=user,
-            ).first()
+            # Find payment record - prioritize subscription lookup since most payments use subscriptions
+            payment = None
+            if razorpay_subscription_id:
+                payment = Payment.objects.filter(
+                    razorpay_subscription_id=razorpay_subscription_id,
+                    user=user,
+                ).first()
+                logger.info("Looking for payment by subscription_id=%s: %s", razorpay_subscription_id, "found" if payment else "not found")
+            
+            if not payment and razorpay_order_id:
+                payment = Payment.objects.filter(
+                    razorpay_order_id=razorpay_order_id,
+                    user=user,
+                ).first()
+                logger.info("Looking for payment by order_id=%s: %s", razorpay_order_id, "found" if payment else "not found")
 
             if not payment:
+                # Debug: Show all pending payments for this user
+                all_payments = Payment.objects.filter(user=user, status='pending').values_list(
+                    'id', 'razorpay_order_id', 'razorpay_subscription_id', 'plan__name'
+                )
+                logger.error(
+                    "Payment not found for user %s with order_id=%s or subscription_id=%s. Pending payments: %s",
+                    user.email,
+                    razorpay_order_id,
+                    razorpay_subscription_id,
+                    list(all_payments)
+                )
                 return VerifyRazorpayPayment(
                     payment=None,
                     subscription=None,
                     success=False,
-                    message="Payment not found.",
+                    message="Payment record not found in database. Please contact support.",
+                )
+
+            logger.info("Found payment record: id=%s, plan=%s, status=%s", payment.id, payment.plan.name, payment.status)
+
+            # Idempotency: if webhook/callback retries, don't fail already-processed payments.
+            if payment.status == "succeeded":
+                subscription, _ = UserSubscription.objects.get_or_create(user=user)
+                if payment.plan and subscription.plan_id != payment.plan_id:
+                    subscription.plan = payment.plan
+                    subscription.is_active = True
+                    if payment.plan.name == "basic":
+                        subscription.renews_at = timezone.now() + timedelta(days=30)
+                    elif payment.plan.name == "premium":
+                        subscription.renews_at = None
+                    subscription.save()
+
+                return VerifyRazorpayPayment(
+                    payment=payment,
+                    subscription=subscription,
+                    success=True,
+                    message=f"Payment already verified for {payment.plan.name} plan.",
                 )
 
             payment.status = "succeeded"
@@ -967,6 +1027,8 @@ class VerifyRazorpayPayment(graphene.Mutation):
                 subscription.renews_at = None
             subscription.save()
 
+            logger.info("✅ Payment verified and subscription updated for user %s to %s plan", user.email, payment.plan.name)
+
             return VerifyRazorpayPayment(
                 payment=payment,
                 subscription=subscription,
@@ -975,12 +1037,12 @@ class VerifyRazorpayPayment(graphene.Mutation):
             )
 
         except Exception as e:
-            logger.error("Error verifying Razorpay payment: %s", e)
+            logger.error("Error verifying Razorpay payment: %s", e, exc_info=True)
             return VerifyRazorpayPayment(
                 payment=None,
                 subscription=None,
                 success=False,
-                message="Error confirming payment.",
+                message="Payment verification failed. Please retry or contact support.",
             )
 
 

@@ -41,7 +41,10 @@
 .plan-info h3 {
   margin: 0;
   font-size: 1.1rem;
-  color: #e5e7eb;
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-weight: 600;
 }
 

@@ -252,6 +252,8 @@ LOGGING = {
     },
     "loggers": {
         "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "graphene": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
         "analyser": {"handlers": ["console"], "level": "DEBUG" if DEBUG else "INFO", "propagate": False},
         "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },

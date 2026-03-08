@@ -4,6 +4,12 @@ import { gql } from '@apollo/client';
 
 const httpLink = new HttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/',
+  fetchOptions: {
+    mode: 'cors',
+  },
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Attach JWT token to every request if available
@@ -36,8 +42,19 @@ const resolvePendingRequests = () => {
   pendingRequests = [];
 };
 
+const isDev = import.meta.env.DEV;
+
 // Error link: catch expired tokens, attempt refresh, or force logout
-const errorLink = onError(({ graphQLErrors, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  // Keep diagnostics during local development; avoid noisy logs in production.
+  if (networkError && isDev) {
+    console.error('🛑 Network Error:', networkError);
+    console.error('   Operation:', operation.operationName);
+    if (networkError.statusCode === 400) {
+      console.error('   ⚠️ HTTP 400 Bad Request - check request format');
+    }
+  }
+
   if (!graphQLErrors) return;
 
   const expiredError = graphQLErrors.find(

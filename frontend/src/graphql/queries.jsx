@@ -304,10 +304,6 @@ export const CREATE_RAZORPAY_ORDER_MUTATION = gql`
     createRazorpayOrder(planName: $planName) {
       payment {
         id
-        user {
-          id
-          email
-        }
         plan {
           id
           name
@@ -358,9 +354,7 @@ export const VERIFY_RAZORPAY_PAYMENT_MUTATION = gql`
         }
         isActive
         projectsUsed
-        projectsLimit
         analysesUsed
-        analysesLimit
         renewsAt
       }
       success
@@ -371,25 +365,18 @@ export const VERIFY_RAZORPAY_PAYMENT_MUTATION = gql`
 
 export const GET_CURRENT_SUBSCRIPTION = gql`
   query GetCurrentSubscription {
-    currentUser {
+    mySubscription {
       id
-      email
-      subscription {
+      plan {
         id
-        plan {
-          id
-          name
-          pricePerMonth
-          description
-        }
-        isActive
-        projectsUsed
-        projectsLimit
-        analysesUsed
-        analysesLimit
-        renewsAt
-        createdAt
+        name
+        pricePerMonth
+        description
       }
+      isActive
+      projectsUsed
+      analysesUsed
+      renewsAt
     }
   }
 `;

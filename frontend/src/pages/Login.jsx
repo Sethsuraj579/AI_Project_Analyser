@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { LOGIN_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import './Auth.css';
 
 function Login({ onLogin, onSwitchToRegister }) {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -109,118 +110,144 @@ function Login({ onLogin, onSwitchToRegister }) {
 
   if (googleOtpStep) {
     return (
-      <div className="login-container">
-        <div className="login-card card">
-          <h2>✉️ Verify Email</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-            A verification code has been sent to <strong>{googleEmail}</strong>
-          </p>
-
-          {error && <div className="login-error">{error}</div>}
-          {info && <div className="login-info" style={{ color: 'var(--success)', marginBottom: 16, padding: 12, borderRadius: 8, backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>{info}</div>}
-
-          <form onSubmit={handleVerifyGoogleOtp}>
-            <div className="form-group">
-              <label>Verification Code</label>
-              <input
-                value={googleOtp}
-                onChange={(e) => {
-                  setGoogleOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                  if (error) setError('');
-                }}
-                placeholder="Enter 6-digit code"
-                maxLength="6"
-                inputMode="numeric"
-                autoFocus
-              />
+      <div className="auth-page">
+        <div className="auth-container">
+          <div className="auth-card">
+            <div className="auth-header">
+              <span className="auth-logo">✉️</span>
+              <h1>Verify Your Email</h1>
+              <p>
+                A verification code has been sent to{' '}
+                <span className="auth-email-highlight">{googleEmail}</span>
+              </p>
             </div>
-            <button 
-              className="btn btn-primary" 
-              type="submit" 
-              disabled={verifyingOtp || !googleOtp.trim()} 
-              style={{ width: '100%', marginTop: 8 }}
-            >
-              {verifyingOtp ? 'Verifying...' : 'Verify & Sign In'}
-            </button>
-          </form>
 
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 16, textAlign: 'center' }}>
-            Didn't receive the code?{' '}
-            <button 
-              className="btn-link" 
-              onClick={() => setGoogleOtpStep(false)}
-              style={{ textDecoration: 'underline', cursor: 'pointer' }}
-            >
-              Try another method
-            </button>
-          </p>
+            {error && <div className="auth-alert error">⚠️ {error}</div>}
+            {info && <div className="auth-alert success">✓ {info}</div>}
+
+            <form className="auth-form" onSubmit={handleVerifyGoogleOtp}>
+              <div className="auth-form-group">
+                <label>Verification Code</label>
+                <input
+                  className="auth-otp-input"
+                  value={googleOtp}
+                  onChange={(e) => {
+                    setGoogleOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    if (error) setError('');
+                  }}
+                  placeholder="000000"
+                  maxLength="6"
+                  inputMode="numeric"
+                  autoFocus
+                />
+              </div>
+              <button 
+                className="auth-btn auth-btn-primary" 
+                type="submit" 
+                disabled={verifyingOtp || !googleOtp.trim()}
+              >
+                {verifyingOtp ? (
+                  <>
+                    <span className="auth-spinner"></span>
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify & Sign In'
+                )}
+              </button>
+            </form>
+
+            <div className="auth-footer">
+              Didn't receive the code?{' '}
+              <button 
+                className="auth-link" 
+                onClick={() => setGoogleOtpStep(false)}
+              >
+                Try another method
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card card">
-        <h2>🔬 AI Project Analyser</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-          Sign in to create projects and run analyses
-        </p>
-
-        {error && <div className="login-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Username</label>
-            <input
-              value={form.username}
-              onChange={(e) => {
-                setForm({ ...form, username: e.target.value });
-                if (error) setError('');
-              }}
-              placeholder="Enter username"
-              name="username"
-              autoComplete="username"
-              required
-              autoFocus
-            />
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <span className="auth-logo">🔬</span>
+            <h1>Welcome Back</h1>
+            <p>Sign in to access your AI Project Analyser dashboard</p>
           </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => {
-                setForm({ ...form, password: e.target.value });
-                if (error) setError('');
-              }}
-              placeholder="Enter password"
-              name="password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
-          <button className="btn btn-primary" type="submit" disabled={isSubmitDisabled} style={{ width: '100%', marginTop: 8 }}>
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
 
-        <div className="auth-divider">
-          <span>or</span>
+          {error && <div className="auth-alert error">⚠️ {error}</div>}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="auth-form-group">
+              <label>Username</label>
+              <input
+                value={form.username}
+                onChange={(e) => {
+                  setForm({ ...form, username: e.target.value });
+                  if (error) setError('');
+                }}
+                placeholder="Enter your username"
+                name="username"
+                autoComplete="username"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="auth-form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  if (error) setError('');
+                }}
+                placeholder="Enter your password"
+                name="password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            <button 
+              className="auth-btn auth-btn-primary" 
+              type="submit" 
+              disabled={isSubmitDisabled}
+            >
+              {loading ? (
+                <>
+                  <span className="auth-spinner"></span>
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+
+          <div className="auth-divider">
+            <span>or continue with</span>
+          </div>
+
+          <GoogleSignInButton
+            onSuccess={handleGoogleSuccess}
+            loading={googleLoading}
+            text="Sign in with Google"
+          />
+
+          <div className="auth-footer">
+            Don't have an account?{' '}
+            <button className="auth-link" onClick={onSwitchToRegister}>
+              Create one
+            </button>
+          </div>
         </div>
-
-        <GoogleSignInButton
-          onSuccess={handleGoogleSuccess}
-          loading={googleLoading}
-          text="Sign in with Google"
-        />
-
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 20 }}>
-          Don't have an account?{' '}
-          <button className="btn-link" onClick={onSwitchToRegister}>
-            Create one
-          </button>
-        </p>
       </div>
     </div>
   );

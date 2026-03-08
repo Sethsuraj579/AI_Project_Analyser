@@ -62,6 +62,7 @@ const FALLBACK_PLANS = [
       'Up to 20 projects',
       'Unlimited analyses',
       '30-day project reports',
+      'PDF report download',
       'Priority email support',
       'Advanced metrics',
       'Trend analysis',
@@ -79,6 +80,7 @@ const FALLBACK_PLANS = [
       'Unlimited projects',
       'Unlimited analyses',
       'Unlimited reports',
+      'PDF report download',
       '24/7 priority support',
       'All metrics & features',
       'API access',
@@ -266,7 +268,9 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               onMouseEnter={() => handleCardHover(index, true)}
               onMouseLeave={() => handleCardHover(index, false)}
             >
-              <div className="plan-badge">{plan.name}</div>
+              <div className="plan-badge">
+                {plan.normalizedName === 'basic' ? '⭐ MOST POPULAR' : plan.name}
+              </div>
               <h2>{plan.description}</h2>
 
               <div className="price">
@@ -274,7 +278,7 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
                   <span className="free">FREE</span>
                 ) : (
                   <>
-                    <span className="amount">INR {plan.pricePerMonth}</span>
+                    <span className="amount">₹{plan.pricePerMonth}</span>
                     <span className="period">/month</span>
                   </>
                 )}
@@ -282,18 +286,20 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
 
               <div className="plan-limits">
                 <div className="limit">
-                  📁 <strong>{plan.maxProjects === -1 ? 'Unlimited' : plan.maxProjects}</strong> Projects
+                  <strong>{plan.maxProjects === -1 ? '∞' : plan.maxProjects}</strong>
+                  <span>Projects</span>
                 </div>
                 <div className="limit">
-                  📊 <strong>{plan.maxAnalysesPerMonth === -1 ? 'Unlimited' : plan.maxAnalysesPerMonth}</strong> Analyses/Month
+                  <strong>{plan.maxAnalysesPerMonth === -1 ? '∞' : plan.maxAnalysesPerMonth}</strong>
+                  <span>Analyses</span>
                 </div>
               </div>
 
               <div className="features">
-                <h3>Features Included:</h3>
+                <h3>What's Included</h3>
                 <ul>
                   {plan.normalizedFeatures.map((feature, idx) => (
-                    <li key={idx}>✓ {feature}</li>
+                    <li key={idx}>{feature}</li>
                   ))}
                 </ul>
               </div>
@@ -303,7 +309,7 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
                 onClick={() => handleSelectPlan(plan)}
                 disabled={selectedPlan === plan.normalizedName}
               >
-                {selectedPlan === plan.normalizedName ? '✓ Current Plan' : 'Select Plan'}
+                {selectedPlan === plan.normalizedName ? '✓ Current Plan' : 'Get Started'}
               </button>
             </div>
           ))}

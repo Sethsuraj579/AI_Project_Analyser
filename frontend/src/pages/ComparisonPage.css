@@ -40,7 +40,10 @@
 .tab-content-overview h3 {
   font-size: 1.3rem;
   font-weight: 600;
-  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 12px;
 }
 

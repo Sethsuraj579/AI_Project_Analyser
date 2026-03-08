@@ -6,7 +6,7 @@ Your AI Project Analyser now includes a comprehensive subscription system with t
 ## Plans
 
 ### 🟢 FREE Plan
-- **Cost**: $0/month
+- **Cost**: ₹0/month
 - **Projects**: 5 maximum
 - **Analyses**: Unlimited
 - **Features**:
@@ -16,7 +16,7 @@ Your AI Project Analyser now includes a comprehensive subscription system with t
   - Standard metrics
 
 ### 🔵 BASIC Plan
-- **Cost**: $29/month
+- **Cost**: ₹29/month
 - **Projects**: 20 maximum
 - **Analyses**: Unlimited
 - **Duration**: 30-day billing cycle
@@ -30,7 +30,7 @@ Your AI Project Analyser now includes a comprehensive subscription system with t
   - Custom thresholds
 
 ### 🟡 PREMIUM Plan
-- **Cost**: $99/month
+- **Cost**: ₹99/month
 - **Projects**: Unlimited
 - **Analyses**: Unlimited
 - **Duration**: Monthly subscription

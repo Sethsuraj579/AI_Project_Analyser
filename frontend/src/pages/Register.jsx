@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { SEND_OTP, REGISTER_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import './Auth.css';
 
 function Register({ onLogin, onSwitchToLogin }) {
   const [step, setStep] = useState(1); // 1 = form, 2 = OTP verification, 3 = Google OTP verification
@@ -167,196 +168,232 @@ function Register({ onLogin, onSwitchToLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card card">
-        <h2>🔬 AI Project Analyser</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-          {step === 1 ? 'Create your account' : 'Verify your email'}
-        </p>
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <span className="auth-logo">🔬</span>
+            <h1>
+              {step === 1 ? 'Create Account' : step === 2 ? 'Verify Email' : 'Verify Email'}
+            </h1>
+            <p>
+              {step === 1 
+                ? 'Start analyzing your projects with AI-powered insights' 
+                : 'Enter the verification code sent to your email'}
+            </p>
+          </div>
 
-        {error && <div className="login-error">{error}</div>}
-        {info && <div className="login-info" style={{ color: 'var(--success)', marginBottom: 16, padding: 12, borderRadius: 8, backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>{info}</div>}
+          {error && <div className="auth-alert error">⚠️ {error}</div>}
+          {info && <div className="auth-alert success">✓ {info}</div>}
 
-        {step === 1 ? (
-          <>
-            <form onSubmit={handleSendOTP}>
-              <div className="form-group">
-                <label>Username</label>
-                <input
-                  value={form.username}
-                  onChange={(e) => {
-                    setForm({ ...form, username: e.target.value });
-                    if (error) setError('');
-                  }}
-                  placeholder="Choose a username"
-                  name="username"
-                  autoComplete="username"
-                  required
-                  autoFocus
-                />
+          {step === 1 ? (
+            <>
+              <form className="auth-form" onSubmit={handleSendOTP}>
+                <div className="auth-form-group">
+                  <label>Username</label>
+                  <input
+                    value={form.username}
+                    onChange={(e) => {
+                      setForm({ ...form, username: e.target.value });
+                      if (error) setError('');
+                    }}
+                    placeholder="Choose a username"
+                    name="username"
+                    autoComplete="username"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="auth-form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => {
+                      setForm({ ...form, email: e.target.value });
+                      if (error) setError('');
+                    }}
+                    placeholder="your@email.com"
+                    name="email"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+                <div className="auth-form-group">
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => {
+                      setForm({ ...form, password: e.target.value });
+                      if (error) setError('');
+                    }}
+                    placeholder="Minimum 8 characters"
+                    name="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <div className="auth-form-group">
+                  <label>Confirm Password</label>
+                  <input
+                    type="password"
+                    value={form.confirmPassword}
+                    onChange={(e) => {
+                      setForm({ ...form, confirmPassword: e.target.value });
+                      if (error) setError('');
+                    }}
+                    placeholder="Re-enter password"
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <button
+                  className="auth-btn auth-btn-primary"
+                  type="submit"
+                  disabled={isSendDisabled}
+                >
+                  {sendingOtp ? (
+                    <>
+                      <span className="auth-spinner"></span>
+                      Sending code...
+                    </>
+                  ) : (
+                    'Send Verification Code'
+                  )}
+                </button>
+              </form>
+
+              <div className="auth-divider">
+                <span>or continue with</span>
               </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => {
-                    setForm({ ...form, email: e.target.value });
-                    if (error) setError('');
-                  }}
-                  placeholder="your@email.com"
-                  name="email"
-                  autoComplete="email"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => {
-                    setForm({ ...form, password: e.target.value });
-                    if (error) setError('');
-                  }}
-                  placeholder="Minimum 8 characters"
-                  name="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Confirm Password</label>
-                <input
-                  type="password"
-                  value={form.confirmPassword}
-                  onChange={(e) => {
-                    setForm({ ...form, confirmPassword: e.target.value });
-                    if (error) setError('');
-                  }}
-                  placeholder="Re-enter password"
-                  name="confirmPassword"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                />
-              </div>
+
+              <GoogleSignInButton
+                onSuccess={handleGoogleSuccess}
+                loading={googleLoading}
+                text="Sign up with Google"
+              />
+            </>
+          ) : step === 2 ? (
+            // Email + Password OTP verification
+            <>
               <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={isSendDisabled}
-                style={{ width: '100%', marginTop: 8 }}
+                className="auth-back-btn"
+                onClick={() => { setStep(1); setOtpCode(''); setError(''); setInfo(''); }}
               >
-                {sendingOtp ? 'Sending OTP...' : 'Send Verification Code'}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
               </button>
-            </form>
+              <p style={{ color: '#6b6b80', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center' }}>
+                We sent a 6-digit code to{' '}
+                <span className="auth-email-highlight">{form.email}</span>
+              </p>
+              <form className="auth-form" onSubmit={handleVerifyAndRegister}>
+                <div className="auth-form-group">
+                  <label>Verification Code</label>
+                  <input
+                    className="auth-otp-input"
+                    value={otpCode}
+                    onChange={(e) => {
+                      setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      if (error) setError('');
+                    }}
+                    placeholder="000000"
+                    required
+                    autoFocus
+                    maxLength={6}
+                    inputMode="numeric"
+                  />
+                </div>
+                <button
+                  className="auth-btn auth-btn-primary"
+                  type="submit"
+                  disabled={isVerifyDisabled}
+                >
+                  {registering ? (
+                    <>
+                      <span className="auth-spinner"></span>
+                      Creating account...
+                    </>
+                  ) : (
+                    'Verify & Create Account'
+                  )}
+                </button>
+              </form>
+              <div className="auth-footer">
+                Didn't receive the code?{' '}
+                <button
+                  className="auth-link"
+                  onClick={handleResendOtp}
+                  disabled={sendingOtp}
+                >
+                  Resend code
+                </button>
+              </div>
+            </>
+          ) : (
+            // Google OTP verification
+            <>
+              <button
+                className="auth-back-btn"
+                onClick={() => { setStep(1); setGoogleOtp(''); setError(''); setInfo(''); }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Back
+              </button>
+              <p style={{ color: '#6b6b80', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center' }}>
+                We sent a 6-digit code to{' '}
+                <span className="auth-email-highlight">{googleEmail}</span>
+              </p>
+              <form className="auth-form" onSubmit={handleVerifyGoogleOtp}>
+                <div className="auth-form-group">
+                  <label>Verification Code</label>
+                  <input
+                    className="auth-otp-input"
+                    value={googleOtp}
+                    onChange={(e) => {
+                      setGoogleOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      if (error) setError('');
+                    }}
+                    placeholder="000000"
+                    required
+                    autoFocus
+                    maxLength={6}
+                    inputMode="numeric"
+                  />
+                </div>
+                <button
+                  className="auth-btn auth-btn-primary"
+                  type="submit"
+                  disabled={verifyingGoogleOtp}
+                >
+                  {verifyingGoogleOtp ? (
+                    <>
+                      <span className="auth-spinner"></span>
+                      Verifying...
+                    </>
+                  ) : (
+                    `Verify & ${googleIsNewUser ? 'Create Account' : 'Sign In'}`
+                  )}
+                </button>
+              </form>
+            </>
+          )}
 
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            <GoogleSignInButton
-              onSuccess={handleGoogleSuccess}
-              loading={googleLoading}
-              text="Sign up with Google"
-            />
-          </>
-        ) : step === 2 ? (
-          // Email + Password OTP verification
-          <form onSubmit={handleVerifyAndRegister}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16, textAlign: 'left' }}>
-              We sent a 6-digit code to <strong style={{ color: 'var(--accent)' }}>{form.email}</strong>
-            </p>
-            <div className="form-group">
-              <label>Verification Code</label>
-              <input
-                value={otpCode}
-                onChange={(e) => {
-                  setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
-                  if (error) setError('');
-                }}
-                placeholder="Enter 6-digit code"
-                required
-                autoFocus
-                maxLength={6}
-                inputMode="numeric"
-                style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.5em' }}
-              />
-            </div>
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={isVerifyDisabled}
-              style={{ width: '100%', marginTop: 8 }}
-            >
-              {registering ? 'Creating Account...' : 'Verify & Create Account'}
+          <div className="auth-footer">
+            Already have an account?{' '}
+            <button className="auth-link" onClick={onSwitchToLogin}>
+              Sign in
             </button>
-            <button
-              type="button"
-              className="btn-link"
-              onClick={handleResendOtp}
-              style={{ marginTop: 12 }}
-              disabled={sendingOtp}
-            >
-              Resend verification code
-            </button>
-            <button
-              type="button"
-              className="btn-link"
-              onClick={() => { setStep(1); setOtpCode(''); setError(''); setInfo(''); }}
-              style={{ marginTop: 12 }}
-            >
-              ← Back to registration
-            </button>
-          </form>
-        ) : (
-          // Google OTP verification
-          <form onSubmit={handleVerifyGoogleOtp}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 16, textAlign: 'left' }}>
-              We sent a 6-digit code to <strong style={{ color: 'var(--accent)' }}>{googleEmail}</strong>
-            </p>
-            <div className="form-group">
-              <label>Verification Code</label>
-              <input
-                value={googleOtp}
-                onChange={(e) => {
-                  setGoogleOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                  if (error) setError('');
-                }}
-                placeholder="Enter 6-digit code"
-                required
-                autoFocus
-                maxLength={6}
-                inputMode="numeric"
-                style={{ textAlign: 'center', fontSize: '1.4rem', letterSpacing: '0.5em' }}
-              />
-            </div>
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={verifyingGoogleOtp}
-              style={{ width: '100%', marginTop: 8 }}
-            >
-              {verifyingGoogleOtp ? 'Verifying...' : `Verify & ${googleIsNewUser ? 'Create' : 'Login'}`}
-            </button>
-            <button
-              type="button"
-              className="btn-link"
-              onClick={() => { setStep(1); setGoogleOtp(''); setError(''); setInfo(''); }}
-              style={{ marginTop: 12 }}
-            >
-              ← Back to registration
-            </button>
-          </form>
-        )}
-
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 20 }}>
-          Already have an account?{' '}
-          <button className="btn-link" onClick={onSwitchToLogin}>
-            Sign in
-          </button>
-        </p>
+          </div>
+        </div>
       </div>
     </div>
   );
