@@ -1,0 +1,128 @@
+.project-comparison-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.comparison-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comparison-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.comparison-header p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.comparison-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comparison-select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 220px;
+}
+
+.comparison-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.overview-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.86rem;
+}
+
+.overview-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.comparison-table-wrap {
+  overflow-x: auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.comparison-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.delta.positive {
+  color: #00d68f;
+  font-weight: 600;
+}
+
+.delta.negative {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.delta.neutral {
+  color: var(--text-secondary);
+}
+
+.comparison-error {
+  color: #ff9b9b;
+  font-size: 0.86rem;
+}
+
+.comparison-loading,
+.comparison-empty {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .comparison-header {
+    flex-direction: column;
+  }
+
+  .comparison-controls {
+    width: 100%;
+  }
+
+  .comparison-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .comparison-overview {
+    grid-template-columns: 1fr;
+  }
+}

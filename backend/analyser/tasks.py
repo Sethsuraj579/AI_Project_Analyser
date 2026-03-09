@@ -4,9 +4,24 @@ Long-running analysis is offloaded to the task queue.
 """
 import logging
 from celery import shared_task
+from django.contrib.auth.models import User
 from .ml_models import model_manager
+from .integrations import dispatch_outbound_webhooks
 
 logger = logging.getLogger("analyser.tasks")
+
+
+@shared_task(bind=True, max_retries=1, default_retry_delay=10)
+def send_outbound_webhooks_async(self, user_id, event_name, payload):
+    """Dispatch outbound webhooks in background to avoid blocking request threads."""
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        logger.warning("Cannot dispatch webhooks for missing user %s", user_id)
+        return {"sent": False, "reason": "user_not_found"}
+
+    dispatch_outbound_webhooks(user, event_name, payload)
+    return {"sent": True, "event": event_name}
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
@@ -28,9 +43,29 @@ def run_analysis_async(self, project_id):
     try:
         run = run_full_analysis(project)
         logger.info("Async analysis completed: run=%s score=%.1f", run.id, run.overall_score)
+        send_outbound_webhooks_async.delay(
+            project.user_id,
+            "analysis.completed",
+            {
+                "project_id": str(project.id),
+                "project_name": project.name,
+                "analysis_run_id": str(run.id),
+                "overall_score": run.overall_score,
+                "overall_grade": run.overall_grade,
+            },
+        )
         return {"run_id": str(run.id), "score": run.overall_score, "grade": run.overall_grade}
     except Exception as exc:
         logger.error("Async analysis failed for project %s: %s", project_id, exc, exc_info=True)
+        send_outbound_webhooks_async.delay(
+            project.user_id,
+            "analysis.failed",
+            {
+                "project_id": str(project.id),
+                "project_name": project.name,
+                "error": str(exc),
+            },
+        )
         # Mark any pending run as failed
         AnalysisRun.objects.filter(project_id=project_id, status="running").update(status="failed")
         raise self.retry(exc=exc)

@@ -18,12 +18,18 @@ env = environ.Env(
     DJANGO_DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"]),
+    REQUIRE_CELERY_FOR_HEAVY_TASKS=(bool, False),
 )
 env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 
 DEBUG = env("DJANGO_DEBUG")
+
+# When enabled, expensive operations fail fast if Celery is unavailable,
+# keeping web worker request paths lightweight and non-blocking.
+# Defaults to True in non-debug environments.
+REQUIRE_CELERY_FOR_HEAVY_TASKS = env.bool("REQUIRE_CELERY_FOR_HEAVY_TASKS", default=not DEBUG)
 
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 

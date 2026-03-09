@@ -45,16 +45,26 @@ export default function SubscriptionSettings() {
 
       <div className="settings-section">
         <h2>Payment Methods</h2>
-        <p className="subtitle">Manage your payment methods</p>
+        <p className="subtitle">How payment methods work for paid plans</p>
 
         <div className="settings-info-card">
-          <h3>💳 Credit/Debit Card</h3>
-          <p>Add or update your payment method for automatic subscription renewals</p>
+          <h3>Payment Guidance</h3>
+          <p>
+            Payment methods are added during subscription purchase and are only required for
+            <strong> Pro</strong> and <strong>Enterprise</strong> plans.
+          </p>
+          <p>
+            Your payment details are securely stored and processed by Razorpay for safe recurring
+            billing.
+          </p>
         </div>
 
         <div className="settings-btn-group">
-          <button className="settings-btn settings-btn-secondary">
-            Add Payment Method
+          <button
+            className="settings-btn settings-btn-secondary"
+            onClick={() => navigate('/pricing')}
+          >
+            Update Payment Method
           </button>
         </div>
       </div>

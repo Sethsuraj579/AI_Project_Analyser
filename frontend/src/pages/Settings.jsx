@@ -9,6 +9,7 @@ import ContactSettings from '../components/settings/ContactSettings';
 import TermsSettings from '../components/settings/TermsSettings';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import HelpSettings from '../components/settings/HelpSettings';
+import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 
 const TABS = [
   { 
@@ -30,36 +31,54 @@ const TABS = [
     description: 'Plans & billing'
   },
   { 
+    id: 'integrations',
+    label: 'Integrations',
+    icon: '🔗',
+    description: 'Webhooks & external tools',
+    section: 'general',
+  },
+  {
     id: 'about', 
     label: 'About', 
     icon: 'ℹ️',
-    description: 'App information'
+    description: 'App information',
+    section: 'support',
   },
   { 
     id: 'contact', 
     label: 'Contact', 
     icon: '📧',
-    description: 'Get in touch'
+    description: 'Get in touch',
+    section: 'support',
   },
   { 
     id: 'terms', 
     label: 'Terms & Conditions', 
     icon: '📜',
-    description: 'Legal terms'
+    description: 'Legal terms',
+    section: 'support',
   },
   { 
     id: 'privacy', 
     label: 'Privacy Policy', 
     icon: '🔒',
-    description: 'Data & privacy'
+    description: 'Data & privacy',
+    section: 'support',
   },
   { 
     id: 'help', 
     label: 'Help', 
     icon: '❓',
-    description: 'Support & FAQs'
+    description: 'Support & FAQs',
+    section: 'support',
   }
 ];
+
+TABS.forEach((tab) => {
+  if (!tab.section) {
+    tab.section = ['account', 'profile', 'subscription'].includes(tab.id) ? 'general' : 'support';
+  }
+});
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -74,6 +93,8 @@ export default function Settings() {
         return <ProfileSettings />;
       case 'subscription':
         return <SubscriptionSettings />;
+      case 'integrations':
+        return <IntegrationsSettings />;
       case 'about':
         return <AboutSettings />;
       case 'contact':
@@ -136,7 +157,7 @@ export default function Settings() {
           <nav className="settings-nav">
             <div className="settings-nav-section">
               <span className="nav-section-title">General</span>
-              {filteredTabs.slice(0, 3).map((tab) => (
+              {filteredTabs.filter((tab) => tab.section === 'general').map((tab) => (
                 <button
                   key={tab.id}
                   className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
@@ -156,7 +177,7 @@ export default function Settings() {
 
             <div className="settings-nav-section">
               <span className="nav-section-title">Support</span>
-              {filteredTabs.slice(3).map((tab) => (
+              {filteredTabs.filter((tab) => tab.section === 'support').map((tab) => (
                 <button
                   key={tab.id}
                   className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}

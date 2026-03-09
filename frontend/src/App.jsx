@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense, useEffect, useCallback } from 'react';
-import { Routes, Route, NavLink } from 'react-router-dom';
+import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 
 // Lazy-loaded pages for code-splitting
 const ProjectList = lazy(() => import('./pages/ProjectList'));
@@ -8,7 +8,6 @@ const NewProject = lazy(() => import('./pages/NewProject'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
-const ComparisonPage = lazy(() => import('./pages/ComparisonPage'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function LoadingFallback() {
@@ -30,7 +29,9 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('jwt_token'));
   const [authPage, setAuthPage] = useState('login'); // 'login' or 'register'
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isPricingRoute = window.location.pathname === '/pricing';
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isPricingRoute = location.pathname === '/pricing';
 
   const handleLogin = (newToken) => {
     setToken(newToken);
@@ -40,7 +41,8 @@ function App() {
     localStorage.removeItem('jwt_token');
     setToken(null);
     setAuthPage('login');
-  }, []);
+    navigate('/');
+  }, [navigate]);
 
   // Listen for forced logout from Apollo error link (expired token)
   useEffect(() => {
@@ -103,9 +105,6 @@ function App() {
           <NavLink to="/new" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
             + New Project
           </NavLink>
-          <NavLink to="/comparison" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
-            📊 Comparison
-          </NavLink>
           <NavLink to="/pricing" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
             💳 Pricing
           </NavLink>
@@ -123,7 +122,6 @@ function App() {
             <Route path="/" element={<ProjectList />} />
             <Route path="/project/:id" element={<ProjectDetail />} />
             <Route path="/new" element={<NewProject />} />
-            <Route path="/comparison" element={<ComparisonPage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

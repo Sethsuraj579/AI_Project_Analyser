@@ -12,6 +12,7 @@ import MetricDetailCard from '../components/MetricDetailCard';
 import ScoreHeatmap from '../components/ScoreHeatmap';
 import ProjectSummary from '../components/ProjectSummary';
 import ProjectReportDownload from '../components/ProjectReportDownload';
+import ProjectComparison from '../components/ProjectComparison';
 
 function ProjectDetail() {
   const { id } = useParams();
@@ -148,6 +149,11 @@ function ProjectDetail() {
             <div className="card">
               <ProjectReportDownload projectId={project.id} projectName={project.name} />
             </div>
+          </div>
+
+          {/* Row 7: Project-to-Project Comparison */}
+          <div className="card" style={{ marginBottom: 24 }}>
+            <ProjectComparison projectId={project.id} />
           </div>
 
           {/* Run History */}

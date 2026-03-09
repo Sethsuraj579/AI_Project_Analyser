@@ -1,21 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 
-const GET_USER_PROFILE = gql`
-  query GetUserProfile {
-    me {
-      id
-      username
-      email
-      firstName
-      lastName
-    }
-  }
-`;
-
 const UPDATE_PROFILE = gql`
-  mutation UpdateProfile($firstName: String, $lastName: String, $email: String) {
-    updateProfile(firstName: $firstName, lastName: $lastName, email: $email) {
+  mutation UpdateProfile($firstName: String, $lastName: String, $email: String, $bio: String, $phoneNumber: String, $company: String, $location: String, $website: String) {
+    updateProfile(firstName: $firstName, lastName: $lastName, email: $email, bio: $bio, phoneNumber: $phoneNumber, company: $company, location: $location, website: $website) {
       success
       message
       user {
@@ -24,6 +12,45 @@ const UPDATE_PROFILE = gql`
         email
         firstName
         lastName
+        profile {
+          bio
+          phoneNumber
+          company
+          location
+          website
+        }
+      }
+    }
+  }
+`;
+
+const UPDATE_PREFERENCES = gql`
+  mutation UpdatePreferences($emailNotifications: Boolean, $projectUpdates: Boolean) {
+    updatePreferences(emailNotifications: $emailNotifications, projectUpdates: $projectUpdates) {
+      success
+      message
+    }
+  }
+`;
+
+const GET_USER_INFO = gql`
+  query GetUserInfo {
+    userInfo {
+      id
+      username
+      email
+      firstName
+      lastName
+      profile {
+        bio
+        phoneNumber
+        company
+        location
+        website
+      }
+      preferences {
+        emailNotifications
+        projectUpdates
       }
     }
   }
@@ -34,18 +61,37 @@ export default function ProfileSettings() {
     firstName: '',
     lastName: '',
     email: '',
-    username: ''
+    username: '',
+    bio: '',
+    phoneNumber: '',
+    company: '',
+    location: '',
+    website: ''
+  });
+  const [preferences, setPreferences] = useState({
+    emailNotifications: true,
+    projectUpdates: true
   });
   const [message, setMessage] = useState(null);
 
-  const { data, loading: queryLoading } = useQuery(GET_USER_PROFILE, {
-    onCompleted: (data) => {
-      if (data.me) {
+  const { data, loading: queryLoading } = useQuery(GET_USER_INFO, {
+    onCompleted: (result) => {
+      if (result.userInfo) {
+        const { userInfo } = result;
         setProfileData({
-          firstName: data.me.firstName || '',
-          lastName: data.me.lastName || '',
-          email: data.me.email || '',
-          username: data.me.username || ''
+          firstName: userInfo.firstName || '',
+          lastName: userInfo.lastName || '',
+          email: userInfo.email || '',
+          username: userInfo.username || '',
+          bio: userInfo.profile?.bio || '',
+          phoneNumber: userInfo.profile?.phoneNumber || '',
+          company: userInfo.profile?.company || '',
+          location: userInfo.profile?.location || '',
+          website: userInfo.profile?.website || ''
+        });
+        setPreferences({
+          emailNotifications: userInfo.preferences?.emailNotifications ?? true,
+          projectUpdates: userInfo.preferences?.projectUpdates ?? true
         });
       }
     },
@@ -71,6 +117,17 @@ export default function ProfileSettings() {
     }
   });
 
+  const [updatePreferences, { loading: preferencesLoading }] = useMutation(UPDATE_PREFERENCES);
+
+  useEffect(() => {
+    if (data?.userInfo?.preferences) {
+      setPreferences({
+        emailNotifications: data.userInfo.preferences.emailNotifications ?? true,
+        projectUpdates: data.userInfo.preferences.projectUpdates ?? true
+      });
+    }
+  }, [data]);
+
   const handleInputChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
   };
@@ -83,9 +140,41 @@ export default function ProfileSettings() {
       variables: {
         firstName: profileData.firstName,
         lastName: profileData.lastName,
-        email: profileData.email
+        email: profileData.email,
+        bio: profileData.bio,
+        phoneNumber: profileData.phoneNumber,
+        company: profileData.company,
+        location: profileData.location,
+        website: profileData.website
       }
     });
+  };
+
+  const handlePreferenceToggle = async (key) => {
+    const nextPreferences = { ...preferences, [key]: !preferences[key] };
+    setPreferences(nextPreferences);
+
+    try {
+      const response = await updatePreferences({
+        variables: {
+          emailNotifications: nextPreferences.emailNotifications,
+          projectUpdates: nextPreferences.projectUpdates
+        }
+      });
+
+      if (!response?.data?.updatePreferences?.success) {
+        setPreferences(preferences);
+        setMessage({
+          type: 'error',
+          text: response?.data?.updatePreferences?.message || 'Failed to update preferences'
+        });
+      } else {
+        setMessage({ type: 'success', text: 'Preferences updated successfully!' });
+      }
+    } catch (error) {
+      setPreferences(preferences);
+      setMessage({ type: 'error', text: error.message });
+    }
   };
 
   return (
@@ -152,6 +241,62 @@ export default function ProfileSettings() {
             />
           </div>
 
+          <div className="settings-form-group">
+            <label htmlFor="bio">Bio</label>
+            <textarea
+              id="bio"
+              name="bio"
+              value={profileData.bio}
+              onChange={handleInputChange}
+              rows={4}
+            />
+          </div>
+
+          <div className="settings-form-group">
+            <label htmlFor="phoneNumber">Phone Number</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              value={profileData.phoneNumber}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="settings-form-group">
+            <label htmlFor="company">Company</label>
+            <input
+              type="text"
+              id="company"
+              name="company"
+              value={profileData.company}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="settings-form-group">
+            <label htmlFor="location">Location</label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={profileData.location}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="settings-form-group">
+            <label htmlFor="website">Website</label>
+            <input
+              type="url"
+              id="website"
+              name="website"
+              value={profileData.website}
+              onChange={handleInputChange}
+              placeholder="https://example.com"
+            />
+          </div>
+
           <div className="settings-btn-group">
             <button 
               type="submit" 
@@ -182,7 +327,20 @@ export default function ProfileSettings() {
             <h4>Email Notifications</h4>
             <p>Receive email updates about your projects and analyses</p>
           </div>
-          <div className="toggle-switch active"></div>
+          <div
+            className={`toggle-switch ${preferences.emailNotifications ? 'active' : ''} ${preferencesLoading ? 'disabled' : ''}`}
+            onClick={() => !preferencesLoading && handlePreferenceToggle('emailNotifications')}
+            role="button"
+            tabIndex={0}
+            aria-label="Toggle email notifications"
+            aria-pressed={preferences.emailNotifications}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !preferencesLoading) {
+                e.preventDefault();
+                handlePreferenceToggle('emailNotifications');
+              }
+            }}
+          ></div>
         </div>
 
         <div className="settings-toggle">
@@ -190,15 +348,20 @@ export default function ProfileSettings() {
             <h4>Project Updates</h4>
             <p>Get notified when your project analysis is complete</p>
           </div>
-          <div className="toggle-switch active"></div>
-        </div>
-
-        <div className="settings-toggle">
-          <div className="settings-toggle-info">
-            <h4>Marketing Emails</h4>
-            <p>Receive updates about new features and promotions</p>
-          </div>
-          <div className="toggle-switch"></div>
+          <div
+            className={`toggle-switch ${preferences.projectUpdates ? 'active' : ''} ${preferencesLoading ? 'disabled' : ''}`}
+            onClick={() => !preferencesLoading && handlePreferenceToggle('projectUpdates')}
+            role="button"
+            tabIndex={0}
+            aria-label="Toggle project updates"
+            aria-pressed={preferences.projectUpdates}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && !preferencesLoading) {
+                e.preventDefault();
+                handlePreferenceToggle('projectUpdates');
+              }
+            }}
+          ></div>
         </div>
       </div>
     </div>

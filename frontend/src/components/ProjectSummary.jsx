@@ -9,6 +9,7 @@ import './ProjectSummary.css';
 function ProjectSummary({ projectId }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const { data, loading, refetch } = useQuery(GET_PROJECT_SUMMARY, {
     variables: { projectId },
@@ -16,22 +17,34 @@ function ProjectSummary({ projectId }) {
   });
 
   const [generateSummary] = useMutation(GENERATE_PROJECT_SUMMARY, {
-    onCompleted: (data) => {
+    onCompleted: async (data) => {
       setIsGenerating(false);
-      if (data.generateProjectSummary.success) {
+      const result = data?.generateProjectSummary;
+      if (result?.success) {
+        setErrorMessage('');
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
-        setTimeout(() => refetch(), 1500);
+
+        // Sync fallback returns summary immediately; async dispatch needs short delay.
+        if (result.asyncDispatched) {
+          setTimeout(() => refetch(), 1500);
+        } else {
+          await refetch();
+        }
+      } else {
+        setErrorMessage(result?.message || 'Could not generate summary.');
       }
     },
     onError: (error) => {
       setIsGenerating(false);
+      setErrorMessage(error?.message || 'Failed to generate summary.');
       console.error('Error generating summary:', error);
     },
   });
 
   const handleGenerateSummary = async () => {
     setIsGenerating(true);
+    setErrorMessage('');
     try {
       await generateSummary({
         variables: { projectId },
@@ -151,6 +164,12 @@ function ProjectSummary({ projectId }) {
               <span className="feature-tag">✨ Accurate</span>
             </div>
           </div>
+        )}
+
+        {errorMessage && (
+          <p className="summary-error-message" role="alert">
+            {errorMessage}
+          </p>
         )}
       </div>
     </div>

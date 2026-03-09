@@ -124,9 +124,22 @@
   padding: 24px;
   min-height: 180px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   color: var(--text-primary);
+}
+
+.summary-error-message {
+  margin: 14px 0 0;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 99, 132, 0.45);
+  background: rgba(255, 99, 132, 0.12);
+  color: #ffb3c0;
+  font-size: 0.88rem;
+  line-height: 1.4;
 }
 
 .summary-text-wrapper {

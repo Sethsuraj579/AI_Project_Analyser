@@ -408,6 +408,40 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Invoice {self.razorpay_invoice_id} - {self.user.email} - {self.amount} {self.currency} ({self.status})"
 
+
+class OutboundWebhook(models.Model):
+    """User-configurable outbound webhooks for integration events."""
+
+    EVENT_CHOICES = [
+        ("analysis.completed", "Analysis Completed"),
+        ("analysis.failed", "Analysis Failed"),
+        ("payment.succeeded", "Payment Succeeded"),
+        ("payment.failed", "Payment Failed"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="outbound_webhooks")
+    name = models.CharField(max_length=120)
+    url = models.URLField()
+    secret = models.CharField(max_length=255, blank=True, default="")
+    event_types = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    last_status = models.IntegerField(null=True, blank=True)
+    last_response = models.TextField(blank=True, default="")
+    last_triggered_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.name} -> {self.url}"
+
 # ──────────────────────────────────────────────────────────────
 # Settings Models
 # ──────────────────────────────────────────────────────────────

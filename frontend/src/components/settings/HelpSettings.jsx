@@ -166,9 +166,6 @@ export default function HelpSettings() {
             <button className="settings-btn settings-btn-primary">
               Contact Support
             </button>
-            <button className="settings-btn settings-btn-secondary">
-              Join Community
-            </button>
           </div>
         </div>
       </div>

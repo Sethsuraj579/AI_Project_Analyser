@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend
+from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, OutboundWebhook
 
 
 @admin.register(Project)
@@ -31,3 +31,10 @@ class MetricSnapshotAdmin(admin.ModelAdmin):
 class HistoricalTrendAdmin(admin.ModelAdmin):
     list_display = ("project", "dimension", "metric_name", "value", "recorded_at")
     list_filter = ("dimension",)
+
+
+@admin.register(OutboundWebhook)
+class OutboundWebhookAdmin(admin.ModelAdmin):
+    list_display = ("name", "user", "url", "is_active", "last_status", "last_triggered_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "url", "user__username", "user__email")

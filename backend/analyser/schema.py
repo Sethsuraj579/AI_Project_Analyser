@@ -9,15 +9,23 @@ import graphene
 import graphql_jwt
 import logging
 from graphene_django import DjangoObjectType
-from graphene import relay
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.utils import timezone
 from datetime import timedelta
-from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ
-from .engine import run_full_analysis, DIMENSION_CONFIG
+from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ, OutboundWebhook
+from .engine import DIMENSION_CONFIG
 from .razorpay_utils import create_order, create_subscription, verify_payment_signature
+from .services.analysis_service import run_analysis_for_user_project
+from .services.summary_service import generate_summary_for_user_project
+from .services.comparison_service import compare_user_projects
+from .services.webhook_service import (
+    create_webhook_for_user,
+    update_webhook_for_user,
+    delete_webhook_for_user,
+    test_webhook_for_user,
+)
 
 logger = logging.getLogger("analyser.auth")
 
@@ -196,6 +204,13 @@ class FAQType(DjangoObjectType):
         fields = "__all__"
 
 
+class OutboundWebhookType(DjangoObjectType):
+    """Outbound webhook integration details."""
+    class Meta:
+        model = OutboundWebhook
+        fields = "__all__"
+
+
 class UserInfoType(graphene.ObjectType):
     """Complete user information combining User, Profile, and Preferences."""
     id = graphene.Int()
@@ -207,6 +222,30 @@ class UserInfoType(graphene.ObjectType):
     preferences = graphene.Field(UserPreferencesType)
     subscription = graphene.Field(UserSubscriptionType)
     created_at = graphene.String()
+
+
+class DimensionComparisonType(graphene.ObjectType):
+    """Comparison details for one dimension between two projects."""
+    dimension = graphene.String()
+    metric_name = graphene.String()
+    current_score = graphene.Float()
+    other_score = graphene.Float()
+    delta = graphene.Float()
+    winner = graphene.String(description="current, other, or tie")
+
+
+class ProjectComparisonType(graphene.ObjectType):
+    """Overall and per-dimension comparison between two projects."""
+    current_project = graphene.Field(ProjectType)
+    other_project = graphene.Field(ProjectType)
+    current_overall_score = graphene.Float()
+    other_overall_score = graphene.Float()
+    current_grade = graphene.String()
+    other_grade = graphene.String()
+    overall_delta = graphene.Float()
+    better_project_name = graphene.String()
+    compared_dimensions = graphene.List(DimensionComparisonType)
+    message = graphene.String()
 
 
 # ──────────────────────────────────────────────────────────────
@@ -229,6 +268,13 @@ class Query(graphene.ObjectType):
     user_info = graphene.Field(UserInfoType, description="Get complete user information")
     faqs = graphene.List(FAQType, category=graphene.String(), description="Get FAQ items")
     contact_messages = graphene.List(ContactMessageType, description="Get user's contact messages")
+    my_outbound_webhooks = graphene.List(OutboundWebhookType, description="Get current user's outbound webhooks")
+    project_comparison = graphene.Field(
+        ProjectComparisonType,
+        project_id=graphene.UUID(required=True),
+        compare_with_id=graphene.UUID(required=True),
+        description="Compare one project with another project owned by the same user",
+    )
 
     # Trends for a project
     trends = graphene.List(
@@ -326,6 +372,28 @@ class Query(graphene.ObjectType):
         if not user or not user.is_authenticated:
             raise Exception("Authentication required.")
         return user.contact_messages.all()
+
+    def resolve_my_outbound_webhooks(self, info):
+        user = _require_auth(info)
+        return OutboundWebhook.objects.filter(user=user).order_by("-created_at")
+
+    def resolve_project_comparison(self, info, project_id, compare_with_id):
+        user = _require_auth(info)
+        result = compare_user_projects(user, project_id, compare_with_id)
+        return ProjectComparisonType(
+            current_project=result["current_project"],
+            other_project=result["other_project"],
+            current_overall_score=result["current_overall_score"],
+            other_overall_score=result["other_overall_score"],
+            current_grade=result["current_grade"],
+            other_grade=result["other_grade"],
+            overall_delta=result["overall_delta"],
+            better_project_name=result["better_project_name"],
+            compared_dimensions=[
+                DimensionComparisonType(**item) for item in result["compared_dimensions"]
+            ],
+            message=result["message"],
+        )
 
 
 # ──────────────────────────────────────────────────────────────
@@ -435,48 +503,84 @@ class RunAnalysis(graphene.Mutation):
 
     def mutate(self, info, project_id):
         user = _require_auth(info)
-        try:
-            project = Project.objects.get(id=project_id, user=user)
-        except Project.DoesNotExist:
-            return RunAnalysis(
-                analysis_run=None, async_dispatched=False,
-                success=False, message="Project not found."
-            )
+        result = run_analysis_for_user_project(user, project_id)
+        return RunAnalysis(
+            analysis_run=result["analysis_run"],
+            async_dispatched=result["async_dispatched"],
+            success=result["success"],
+            message=result["message"],
+        )
 
-        # Try async dispatch only when at least one worker is reachable
-        try:
-            from project_analyser.celery import app as celery_app
-            from .tasks import run_analysis_async
 
-            worker_available = bool(celery_app.control.ping(timeout=1.0))
-            if worker_available:
-                run_analysis_async.delay(str(project_id))
+class CreateOutboundWebhook(graphene.Mutation):
+    """Create outbound webhook integration for current user."""
 
-                # Create a pending run so the frontend can poll
-                pending_run = AnalysisRun.objects.create(
-                    project=project,
-                    status="pending",
-                )
-                return RunAnalysis(
-                    analysis_run=pending_run, async_dispatched=True,
-                    success=True, message="Analysis dispatched to background queue."
-                )
-            logger.warning("No Celery worker available. Falling back to synchronous analysis for project %s", project_id)
-        except Exception as exc:
-            logger.warning("Celery dispatch unavailable for project %s: %s", project_id, exc)
+    class Arguments:
+        name = graphene.String(required=True)
+        url = graphene.String(required=True)
+        secret = graphene.String(required=False)
+        event_types = graphene.List(graphene.String, required=False)
+        is_active = graphene.Boolean(required=False)
 
-        try:
-            analysis_run = run_full_analysis(project)
-            return RunAnalysis(
-                analysis_run=analysis_run, async_dispatched=False,
-                success=True, message="Analysis completed successfully."
-            )
-        except Exception as exc:
-            logger.error("RunAnalysis sync fallback failed for project %s: %s", project_id, exc, exc_info=True)
-            return RunAnalysis(
-                analysis_run=None, async_dispatched=False,
-                success=False, message=f"Analysis failed: {str(exc)}"
-            )
+    webhook = graphene.Field(OutboundWebhookType)
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, name, url, secret="", event_types=None, is_active=True):
+        user = _require_auth(info)
+        result = create_webhook_for_user(user, name, url, secret, event_types, is_active)
+        return CreateOutboundWebhook(webhook=result["webhook"], success=result["success"], message=result["message"])
+
+
+class UpdateOutboundWebhook(graphene.Mutation):
+    """Update outbound webhook integration for current user."""
+
+    class Arguments:
+        webhook_id = graphene.ID(required=True)
+        name = graphene.String(required=False)
+        url = graphene.String(required=False)
+        secret = graphene.String(required=False)
+        event_types = graphene.List(graphene.String, required=False)
+        is_active = graphene.Boolean(required=False)
+
+    webhook = graphene.Field(OutboundWebhookType)
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, webhook_id, name=None, url=None, secret=None, event_types=None, is_active=None):
+        user = _require_auth(info)
+        result = update_webhook_for_user(user, webhook_id, name, url, secret, event_types, is_active)
+        return UpdateOutboundWebhook(webhook=result["webhook"], success=result["success"], message=result["message"])
+
+
+class DeleteOutboundWebhook(graphene.Mutation):
+    """Delete outbound webhook integration for current user."""
+
+    class Arguments:
+        webhook_id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, webhook_id):
+        user = _require_auth(info)
+        result = delete_webhook_for_user(user, webhook_id)
+        return DeleteOutboundWebhook(success=result["success"], message=result["message"])
+
+
+class TestOutboundWebhook(graphene.Mutation):
+    """Send a test payload to a configured outbound webhook."""
+
+    class Arguments:
+        webhook_id = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, webhook_id):
+        user = _require_auth(info)
+        result = test_webhook_for_user(user, webhook_id)
+        return TestOutboundWebhook(success=result["success"], message=result["message"])
 
 
 class GenerateProjectSummary(graphene.Mutation):
@@ -486,37 +590,19 @@ class GenerateProjectSummary(graphene.Mutation):
         project_id = graphene.UUID(required=True)
 
     project_summary = graphene.Field(ProjectSummaryType)
+    async_dispatched = graphene.Boolean(description="True if dispatched to Celery queue")
     success = graphene.Boolean()
     message = graphene.String()
 
     def mutate(self, info, project_id):
-        _require_auth(info)
-        try:
-            from .tasks import generate_project_summary as summary_task
-
-            project = Project.objects.get(id=project_id)
-            
-            # Dispatch async task
-            summary_task.delay(str(project_id))
-            
-            return GenerateProjectSummary(
-                project_summary=None,
-                success=True,
-                message="Summary generation started. Check back in a moment."
-            )
-        except Project.DoesNotExist:
-            return GenerateProjectSummary(
-                project_summary=None,
-                success=False,
-                message="Project not found."
-            )
-        except Exception as exc:
-            logger.error(f"Error generating summary: {exc}")
-            return GenerateProjectSummary(
-                project_summary=None,
-                success=False,
-                message=f"Error: {str(exc)}"
-            )
+        user = _require_auth(info)
+        result = generate_summary_for_user_project(user, project_id)
+        return GenerateProjectSummary(
+            project_summary=result["project_summary"],
+            async_dispatched=result["async_dispatched"],
+            success=result["success"],
+            message=result["message"],
+        )
 
 
 class SendChatMessage(graphene.Mutation):
@@ -866,10 +952,23 @@ class CreateRazorpayOrder(graphene.Mutation):
 
             if not subscription_id:
                 # Fallback to creating a one-time order
+                logger.warning("Subscription creation returned no ID, falling back to one-time order")
                 order = create_order(user, plan)
                 order_id = order.get("id")
                 amount = order.get("amount")
                 currency = order.get("currency")
+                
+                if not order_id:
+                    logger.error("Both subscription and order creation failed to return IDs")
+                    return CreateRazorpayOrder(
+                        payment=None,
+                        order_id=None,
+                        subscription_id=None,
+                        amount=None,
+                        currency=None,
+                        success=False,
+                        message="Failed to create payment order. Please try again.",
+                    )
 
             payment = Payment.objects.create(
                 user=user,
@@ -939,6 +1038,19 @@ class VerifyRazorpayPayment(graphene.Mutation):
                 razorpay_order_id,
                 razorpay_subscription_id
             )
+
+            # Razorpay requires either order_id OR subscription_id for verification
+            if not razorpay_order_id and not razorpay_subscription_id:
+                logger.error(
+                    "Payment verification failed: Neither order_id nor subscription_id provided. "
+                    "payment_id=%s", razorpay_payment_id
+                )
+                return VerifyRazorpayPayment(
+                    payment=None,
+                    subscription=None,
+                    success=False,
+                    message="Invalid payment verification: missing order_id or subscription_id"
+                )
 
             params = {
                 "razorpay_payment_id": razorpay_payment_id,
@@ -1272,6 +1384,382 @@ class VerifyGoogleOTP(graphene.Mutation):
         )
 
 
+# ──────────────────────────────────────────────────────────────
+# User Settings & Profile Mutations
+# ──────────────────────────────────────────────────────────────
+
+
+class UpdateProfile(graphene.Mutation):
+    """Update user profile information."""
+    
+    class Arguments:
+        first_name = graphene.String()
+        last_name = graphene.String()
+        email = graphene.String()
+        bio = graphene.String()
+        phone_number = graphene.String()
+        company = graphene.String()
+        location = graphene.String()
+        website = graphene.String()
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    user = graphene.Field(UserInfoType)
+    
+    def mutate(self, info, **kwargs):
+        user = _require_auth(info)
+        
+        try:
+            # Update User model fields
+            if 'first_name' in kwargs:
+                user.first_name = kwargs['first_name']
+            if 'last_name' in kwargs:
+                user.last_name = kwargs['last_name']
+            if 'email' in kwargs:
+                # Check if email is already taken by another user
+                if User.objects.filter(email=kwargs['email']).exclude(id=user.id).exists():
+                    return UpdateProfile(
+                        success=False,
+                        message="Email already in use by another account.",
+                        user=None
+                    )
+                user.email = kwargs['email']
+            user.save()
+            
+            # Update or create UserProfile
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            if 'bio' in kwargs:
+                profile.bio = kwargs['bio']
+            if 'phone_number' in kwargs:
+                profile.phone_number = kwargs['phone_number']
+            if 'company' in kwargs:
+                profile.company = kwargs['company']
+            if 'location' in kwargs:
+                profile.location = kwargs['location']
+            if 'website' in kwargs:
+                profile.website = kwargs['website']
+            profile.save()
+            
+            # Get preferences
+            preferences, _ = UserPreferences.objects.get_or_create(user=user)
+            
+            return UpdateProfile(
+                success=True,
+                message="Profile updated successfully!",
+                user=UserInfoType(
+                    id=user.id,
+                    username=user.username,
+                    email=user.email,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    profile=profile,
+                    preferences=preferences,
+                    subscription=user.subscription if hasattr(user, 'subscription') else None,
+                    created_at=user.date_joined.isoformat()
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error updating profile: {e}")
+            return UpdateProfile(
+                success=False,
+                message=f"Error updating profile: {str(e)}",
+                user=None
+            )
+
+
+class ChangePassword(graphene.Mutation):
+    """Change user password."""
+    
+    class Arguments:
+        old_password = graphene.String(required=True)
+        new_password = graphene.String(required=True)
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    
+    def mutate(self, info, old_password, new_password):
+        user = _require_auth(info)
+        
+        # Verify old password
+        if not user.check_password(old_password):
+            return ChangePassword(
+                success=False,
+                message="Current password is incorrect."
+            )
+        
+        # Validate new password
+        if len(new_password) < 8:
+            return ChangePassword(
+                success=False,
+                message="New password must be at least 8 characters long."
+            )
+        
+        # Set new password
+        user.set_password(new_password)
+        user.save()
+        
+        logger.info(f"Password changed for user: {user.username}")
+        return ChangePassword(
+            success=True,
+            message="Password changed successfully!"
+        )
+
+
+class DeleteAccount(graphene.Mutation):
+    """Delete user account and all associated data."""
+    
+    class Arguments:
+        password = graphene.String(required=True)
+        confirmation = graphene.String(required=True)
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    
+    def mutate(self, info, password, confirmation):
+        user = _require_auth(info)
+        
+        # Verify password
+        if not user.check_password(password):
+            return DeleteAccount(
+                success=False,
+                message="Password is incorrect."
+            )
+        
+        # Verify confirmation
+        if confirmation.lower() != "delete":
+            return DeleteAccount(
+                success=False,
+                message="Please type 'DELETE' to confirm account deletion."
+            )
+        
+        username = user.username
+        
+        try:
+            # Delete all user's projects (cascade will handle related data)
+            Project.objects.filter(user=user).delete()
+            
+            # Delete user account
+            user.delete()
+            
+            logger.info(f"Account deleted for user: {username}")
+            return DeleteAccount(
+                success=True,
+                message="Account deleted successfully."
+            )
+        except Exception as e:
+            logger.error(f"Error deleting account: {e}")
+            return DeleteAccount(
+                success=False,
+                message=f"Error deleting account: {str(e)}"
+            )
+
+
+class UpdatePreferences(graphene.Mutation):
+    """Update user notification and app preferences."""
+    
+    class Arguments:
+        email_notifications = graphene.Boolean()
+        project_updates = graphene.Boolean()
+        marketing_emails = graphene.Boolean()
+        weekly_digest = graphene.Boolean()
+        dark_theme = graphene.Boolean()
+        notifications_popup = graphene.Boolean()
+        public_profile = graphene.Boolean()
+        show_projects_publicly = graphene.Boolean()
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    preferences = graphene.Field(UserPreferencesType)
+    
+    def mutate(self, info, **kwargs):
+        user = _require_auth(info)
+        
+        try:
+            preferences, _ = UserPreferences.objects.get_or_create(user=user)
+            
+            # Update preferences
+            for key, value in kwargs.items():
+                if hasattr(preferences, key):
+                    setattr(preferences, key, value)
+            
+            preferences.save()
+            
+            return UpdatePreferences(
+                success=True,
+                message="Preferences updated successfully!",
+                preferences=preferences
+            )
+        except Exception as e:
+            logger.error(f"Error updating preferences: {e}")
+            return UpdatePreferences(
+                success=False,
+                message=f"Error updating preferences: {str(e)}",
+                preferences=None
+            )
+
+
+class Enable2FA(graphene.Mutation):
+    """Enable two-factor authentication for the user."""
+    
+    class Arguments:
+        password = graphene.String(required=True)
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    secret = graphene.String()
+    qr_code_url = graphene.String()
+    
+    def mutate(self, info, password):
+        user = _require_auth(info)
+        
+        # Verify password
+        if not user.check_password(password):
+            return Enable2FA(
+                success=False,
+                message="Password is incorrect.",
+                secret=None,
+                qr_code_url=None
+            )
+        
+        try:
+            import pyotp
+            import qrcode
+            import io
+            import base64
+            
+            # Generate secret
+            secret = pyotp.random_base32()
+            
+            # Create TOTP URI
+            totp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+                name=user.email,
+                issuer_name="AI Project Analyser"
+            )
+            
+            # Generate QR code
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(totp_uri)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convert to base64
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            img_str = base64.b64encode(buffer.getvalue()).decode()
+            qr_code_url = f"data:image/png;base64,{img_str}"
+            
+            # Save to user profile (but don't enable yet - user must verify)
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            # Store secret temporarily (in production, use encrypted field)
+            # For now, we'll just return it and let frontend handle verification
+            
+            return Enable2FA(
+                success=True,
+                message="Scan this QR code with your authenticator app.",
+                secret=secret,
+                qr_code_url=qr_code_url
+            )
+        except ImportError:
+            return Enable2FA(
+                success=False,
+                message="2FA functionality not available. Please install required packages (pyotp, qrcode).",
+                secret=None,
+                qr_code_url=None
+            )
+        except Exception as e:
+            logger.error(f"Error enabling 2FA: {e}")
+            return Enable2FA(
+                success=False,
+                message=f"Error enabling 2FA: {str(e)}",
+                secret=None,
+                qr_code_url=None
+            )
+
+
+class Verify2FA(graphene.Mutation):
+    """Verify and complete 2FA setup."""
+    
+    class Arguments:
+        secret = graphene.String(required=True)
+        code = graphene.String(required=True)
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    
+    def mutate(self, info, secret, code):
+        user = _require_auth(info)
+        
+        try:
+            import pyotp
+            
+            # Verify the code
+            totp = pyotp.TOTP(secret)
+            if totp.verify(code):
+                # Enable 2FA for user
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                profile.two_factor_enabled = True
+                profile.save()
+                
+                logger.info(f"2FA enabled for user: {user.username}")
+                return Verify2FA(
+                    success=True,
+                    message="2FA enabled successfully!"
+                )
+            else:
+                return Verify2FA(
+                    success=False,
+                    message="Invalid verification code. Please try again."
+                )
+        except ImportError:
+            return Verify2FA(
+                success=False,
+                message="2FA functionality not available."
+            )
+        except Exception as e:
+            logger.error(f"Error verifying 2FA: {e}")
+            return Verify2FA(
+                success=False,
+                message=f"Error verifying 2FA: {str(e)}"
+            )
+
+
+class Disable2FA(graphene.Mutation):
+    """Disable two-factor authentication."""
+    
+    class Arguments:
+        password = graphene.String(required=True)
+    
+    success = graphene.Boolean()
+    message = graphene.String()
+    
+    def mutate(self, info, password):
+        user = _require_auth(info)
+        
+        # Verify password
+        if not user.check_password(password):
+            return Disable2FA(
+                success=False,
+                message="Password is incorrect."
+            )
+        
+        try:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.two_factor_enabled = False
+            profile.save()
+            
+            logger.info(f"2FA disabled for user: {user.username}")
+            return Disable2FA(
+                success=True,
+                message="2FA disabled successfully!"
+            )
+        except Exception as e:
+            logger.error(f"Error disabling 2FA: {e}")
+            return Disable2FA(
+                success=False,
+                message=f"Error disabling 2FA: {str(e)}"
+            )
+
+
 class Mutation(graphene.ObjectType):
     # JWT auth mutations
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
@@ -1303,3 +1791,18 @@ class Mutation(graphene.ObjectType):
     # AI/ML mutations
     generate_project_summary = GenerateProjectSummary.Field()
     send_chat_message = SendChatMessage.Field()
+
+    # Integrations
+    create_outbound_webhook = CreateOutboundWebhook.Field()
+    update_outbound_webhook = UpdateOutboundWebhook.Field()
+    delete_outbound_webhook = DeleteOutboundWebhook.Field()
+    test_outbound_webhook = TestOutboundWebhook.Field()
+    
+    # User Settings & Profile
+    update_profile = UpdateProfile.Field()
+    change_password = ChangePassword.Field()
+    delete_account = DeleteAccount.Field()
+    update_preferences = UpdatePreferences.Field()
+    enable_2fa = Enable2FA.Field()
+    verify_2fa = Verify2FA.Field()
+    disable_2fa = Disable2FA.Field()

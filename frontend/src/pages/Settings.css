@@ -256,6 +256,43 @@
 .settings-tab.active .tab-description {
   color: var(--text-secondary);
 }
+.integration-events-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.integration-event-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+.integration-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.integration-events-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.integration-event-badge {
+  font-size: 0.72rem;
+  color: var(--accent);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  background: rgba(0, 212, 255, 0.08);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
 
 .active-indicator {
   position: absolute;
@@ -680,6 +717,14 @@
 @media (max-width: 968px) {
   .settings-page {
     padding: 16px;
+  }
+
+  .integration-events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .integration-row {
+    flex-direction: column;
   }
 
   .settings-container {

@@ -276,6 +276,7 @@ export const GENERATE_PROJECT_SUMMARY = gql`
         summary
         generatedAt
       }
+      asyncDispatched
       success
       message
     }
@@ -377,6 +378,36 @@ export const GET_CURRENT_SUBSCRIPTION = gql`
       projectsUsed
       analysesUsed
       renewsAt
+    }
+  }
+`;
+
+export const GET_PROJECT_COMPARISON = gql`
+  query GetProjectComparison($projectId: UUID!, $compareWithId: UUID!) {
+    projectComparison(projectId: $projectId, compareWithId: $compareWithId) {
+      currentProject {
+        id
+        name
+      }
+      otherProject {
+        id
+        name
+      }
+      currentOverallScore
+      otherOverallScore
+      currentGrade
+      otherGrade
+      overallDelta
+      betterProjectName
+      message
+      comparedDimensions {
+        dimension
+        metricName
+        currentScore
+        otherScore
+        delta
+        winner
+      }
     }
   }
 `;

@@ -11,11 +11,11 @@ class Command(BaseCommand):
             "free": {
                 "description": "Get started with basic analysis",
                 "max_projects": 5,
-                "max_analyses_per_month": -1,
+                "max_analyses_per_month": 10,
                 "price_per_month": 0,
                 "features": [
                     "Up to 5 projects",
-                    "Basic analysis",
+                    "Up to 10 analyses per month",
                     "Email support",
                     "Standard metrics",
                 ],
@@ -23,11 +23,11 @@ class Command(BaseCommand):
             "basic": {
                 "description": "Perfect for growing teams",
                 "max_projects": 20,
-                "max_analyses_per_month": -1,
+                "max_analyses_per_month": 100,
                 "price_per_month": 29,
                 "features": [
                     "Up to 20 projects",
-                    "Unlimited analyses",
+                    "Up to 100 analyses per month",
                     "30-day project reports",
                     "PDF report download",
                     "Priority email support",

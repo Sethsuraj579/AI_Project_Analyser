@@ -23,8 +23,8 @@ services:
       - redis_data:/data
 
   # ── Django Backend ──
-  backend:
-    build:
+  backend: 
+    build: 
       context: .
       target: backend
     env_file: backend/.env
