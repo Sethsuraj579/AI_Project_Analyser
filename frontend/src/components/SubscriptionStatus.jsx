@@ -71,7 +71,7 @@ export default function SubscriptionStatus() {
 
         {subscription.isPlanExpired && (
           <div className="warning-banner">
-            ⚠️ Your subscription has expired. Renew to continue!
+            Subscription expired. Renew to continue.
           </div>
         )}
       </div>
@@ -126,7 +126,7 @@ export default function SubscriptionStatus() {
 
       {renewDate && plan.name === 'basic' && (
         <div className="renewal-info">
-          📅 Basic plan renews on: <strong>{renewDate}</strong>
+          Basic plan renews on: <strong>{renewDate}</strong>
         </div>
       )}
 

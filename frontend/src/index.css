@@ -31,7 +31,10 @@
 
 body {
   font-family: var(--font);
-  background: rgba(255, 255, 255, 0.7);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(50, 88, 184, 0.32), transparent 38%),
+    radial-gradient(circle at 84% 18%, rgba(53, 67, 128, 0.24), transparent 34%),
+    linear-gradient(160deg, #080c1c 0%, #0a1023 56%, #090e1c 100%);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
@@ -63,38 +66,78 @@ h1, h2, h3 {
 
 .main-content {
   flex: 1;
-  padding: 24px;
-  max-width: 1400px;
+  padding: 22px 24px;
+  max-width: 1260px;
   margin: 0 auto;
   width: 100%;
 }
 
 /* ── Header ────────────────────────────── */
 .app-header {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(13, 19, 38, 0.98), rgba(10, 15, 32, 0.97));
+  border-bottom: 1px solid rgba(102, 121, 179, 0.32);
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
 }
 
-.app-header h1 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--accent), var(--accent-alt));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 290px;
+}
+
+.app-brand-logo {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(112, 142, 214, 0.45);
+  border-radius: 12px;
+  color: #8cb1ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 28, 58, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(77, 104, 173, 0.2);
+}
+
+.app-brand-logo svg {
+  width: 24px;
+  height: 24px;
+}
+
+.app-brand-copy h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-weight: 650;
+  color: #f4f7ff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.app-brand-copy p {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: #8f9cbc;
+  font-family: var(--font-pro);
+  line-height: 1.2;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .app-header nav {
   display: flex;
-  gap: 16px;
+  gap: 6px;
 }
 
 .burger-btn {
@@ -132,19 +175,35 @@ h1, h2, h3 {
 }
 
 .app-header nav a {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  color: #b4bfd8;
+  font-size: 0.95rem;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border-radius: 9px;
   transition: all 0.2s;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .app-header nav a:hover,
 .app-header nav a.active {
-  color: var(--text-primary);
-  background: var(--bg-card);
+  color: #f1f5ff;
+  background: rgba(28, 39, 74, 0.62);
+  border-color: rgba(98, 118, 177, 0.45);
   text-decoration: none;
+}
+
+.nav-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+}
+
+.nav-icon svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* ── Cards ────────────────────────────── */
@@ -372,7 +431,21 @@ h1, h2, h3 {
 
   .app-header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .app-brand {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .app-brand-copy h1 {
+    font-size: 1.05rem;
+  }
+
+  .app-brand-copy p {
+    font-size: 0.76rem;
   }
 
   .burger-btn {
@@ -380,25 +453,34 @@ h1, h2, h3 {
     margin-left: auto;
   }
 
-  .app-header nav {
+  .header-actions {
     display: none;
     width: 100%;
     flex-direction: column;
     gap: 10px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: rgba(13, 20, 42, 0.95);
+    border: 1px solid rgba(98, 118, 177, 0.45);
     border-radius: var(--radius);
     padding: 12px;
   }
 
-  .app-header nav.open {
+  .header-actions.open {
     display: flex;
+  }
+
+  .app-header nav {
+    width: 100%;
+    flex-direction: column;
   }
 
   .app-header nav a,
   .app-header .btn-logout {
     width: 100%;
     text-align: left;
+  }
+
+  .app-header .btn-logout {
+    margin-top: 4px;
   }
 }
 
@@ -443,21 +525,21 @@ h1, h2, h3 {
 
 /* ── Logout Button ─────────────────────────── */
 .btn-logout {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  background: rgba(16, 24, 49, 0.78);
+  border: 1px solid rgba(98, 118, 177, 0.45);
+  color: #d7e0f5;
+  font-size: 0.92rem;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-logout:hover {
-  color: var(--accent-red);
-  border-color: var(--accent-red);
-  background: rgba(255, 23, 68, 0.08);
+  color: #ffb8c3;
+  border-color: rgba(255, 108, 130, 0.7);
+  background: rgba(71, 27, 43, 0.46);
 }
 
 /* ── Auth Divider ──────────────────────────── */

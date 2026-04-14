@@ -48,10 +48,25 @@ function ProjectReportDownload({ projectId, projectName }) {
         throw new Error('Unable to download report. Please run analysis and try again.');
       }
 
+      const contentType = (response.headers.get('content-type') || '').toLowerCase();
+      if (!contentType.includes('application/pdf')) {
+        let serverMessage = 'Server did not return a valid PDF file.';
+        try {
+          const errorData = await response.json();
+          if (errorData?.error) {
+            serverMessage = errorData.error;
+          }
+        } catch {
+          // Keep default message when response is not JSON.
+        }
+        throw new Error(serverMessage);
+      }
+
       const blob = await response.blob();
       const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
+      link.type = 'application/pdf';
       link.download = `${(projectName || 'project').replace(/\s+/g, '-').toLowerCase()}-analysis-report.pdf`;
       document.body.appendChild(link);
       link.click();

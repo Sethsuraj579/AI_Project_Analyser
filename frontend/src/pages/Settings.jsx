@@ -11,64 +11,139 @@ import PrivacySettings from '../components/settings/PrivacySettings';
 import HelpSettings from '../components/settings/HelpSettings';
 import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 
+function SettingsIcon({ name }) {
+  if (name === 'account') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M5 20c1.6-3.2 4.1-5 7-5s5.4 1.8 7 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'profile') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 4h10l3 3v13H7z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M10 11h7M10 15h5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'subscription') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M3 10h18" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  if (name === 'integrations') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 7h4a3 3 0 0 1 0 6H8m8 4h-4a3 3 0 0 1 0-6h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'about') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M12 10v6M12 7h.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'contact') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="6" width="16" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M4 8l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === 'terms') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 4h10l3 3v13H7z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M10 11h7M10 15h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  if (name === 'privacy') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3l7 3v6c0 4.8-3 7.8-7 9-4-1.2-7-4.2-7-9V6l7-3z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  if (name === 'help') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9.5 9a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.3 1-1.3 1.8v.7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="12" cy="18" r="1" fill="currentColor" />
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 const TABS = [
   { 
     id: 'account', 
     label: 'Account', 
-    icon: '👤',
+    icon: 'account',
     description: 'Security & authentication'
   },
   { 
     id: 'profile', 
     label: 'Profile', 
-    icon: '📝',
+    icon: 'profile',
     description: 'Personal information'
   },
   { 
     id: 'subscription', 
     label: 'Subscription', 
-    icon: '💳',
+    icon: 'subscription',
     description: 'Plans & billing'
   },
   { 
     id: 'integrations',
     label: 'Integrations',
-    icon: '🔗',
+    icon: 'integrations',
     description: 'Webhooks & external tools',
     section: 'general',
   },
   {
     id: 'about', 
     label: 'About', 
-    icon: 'ℹ️',
+    icon: 'about',
     description: 'App information',
     section: 'support',
   },
   { 
     id: 'contact', 
     label: 'Contact', 
-    icon: '📧',
+    icon: 'contact',
     description: 'Get in touch',
     section: 'support',
   },
   { 
     id: 'terms', 
     label: 'Terms & Conditions', 
-    icon: '📜',
+    icon: 'terms',
     description: 'Legal terms',
     section: 'support',
   },
   { 
     id: 'privacy', 
     label: 'Privacy Policy', 
-    icon: '🔒',
+    icon: 'privacy',
     description: 'Data & privacy',
     section: 'support',
   },
   { 
     id: 'help', 
     label: 'Help', 
-    icon: '❓',
+    icon: 'help',
     description: 'Support & FAQs',
     section: 'support',
   }
@@ -84,6 +159,9 @@ export default function Settings() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('account');
   const [searchQuery, setSearchQuery] = useState('');
+  const visibleTabs = TABS.length;
+  const generalTabs = TABS.filter((tab) => tab.section === 'general').length;
+  const supportTabs = TABS.filter((tab) => tab.section === 'support').length;
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -134,6 +212,20 @@ export default function Settings() {
             </div>
           </div>
         </div>
+        <div className="settings-summary-strip">
+          <div className="settings-summary-card">
+            <span className="settings-summary-value">{visibleTabs}</span>
+            <span className="settings-summary-label">Sections</span>
+          </div>
+          <div className="settings-summary-card">
+            <span className="settings-summary-value">{generalTabs}</span>
+            <span className="settings-summary-label">General</span>
+          </div>
+          <div className="settings-summary-card">
+            <span className="settings-summary-value">{supportTabs}</span>
+            <span className="settings-summary-label">Support</span>
+          </div>
+        </div>
       </div>
 
       <div className="settings-container">
@@ -164,7 +256,7 @@ export default function Settings() {
                   onClick={() => setActiveTab(tab.id)}
                 >
                   <div className="tab-icon-wrapper">
-                    <span className="tab-icon">{tab.icon}</span>
+                    <span className="tab-icon"><SettingsIcon name={tab.icon} /></span>
                   </div>
                   <div className="tab-content">
                     <span className="tab-label">{tab.label}</span>
@@ -184,7 +276,7 @@ export default function Settings() {
                   onClick={() => setActiveTab(tab.id)}
                 >
                   <div className="tab-icon-wrapper">
-                    <span className="tab-icon">{tab.icon}</span>
+                    <span className="tab-icon"><SettingsIcon name={tab.icon} /></span>
                   </div>
                   <div className="tab-content">
                     <span className="tab-label">{tab.label}</span>
@@ -199,7 +291,7 @@ export default function Settings() {
 
         <main className="settings-content">
           <div className="settings-content-header">
-            <div className="content-header-icon">{currentTab?.icon}</div>
+            <div className="content-header-icon"><SettingsIcon name={currentTab?.icon} /></div>
             <div className="content-header-text">
               <h2>{currentTab?.label}</h2>
               <p>{currentTab?.description}</p>

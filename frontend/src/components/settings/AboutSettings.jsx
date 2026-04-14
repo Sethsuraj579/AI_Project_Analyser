@@ -8,7 +8,7 @@ export default function AboutSettings() {
         <p className="subtitle">Learn more about our platform</p>
 
         <div className="settings-info-card">
-          <h3>🔬 Our Mission</h3>
+          <h3>Our Mission</h3>
           <p>
             AI Project Analyser is a cutting-edge platform designed to help developers and teams 
             analyze, optimize, and improve their software projects using advanced AI-powered insights. 
@@ -17,18 +17,18 @@ export default function AboutSettings() {
         </div>
 
         <div className="settings-info-card">
-          <h3>✨ Key Features</h3>
-          <p>
-            • <strong>Automated Code Analysis:</strong> Deep dive into your codebase with AI-powered metrics<br/>
-            • <strong>Quality Scoring:</strong> Get comprehensive quality scores across multiple dimensions<br/>
-            • <strong>Project Comparison:</strong> Compare multiple projects side-by-side<br/>
-            • <strong>AI Chatbot:</strong> Ask questions about your code and get instant answers<br/>
-            • <strong>Detailed Reports:</strong> Generate comprehensive analysis reports
-          </p>
+          <h3>Key Features</h3>
+          <ul className="settings-list-compact">
+            <li><strong>Automated Code Analysis:</strong> Deep dive into your codebase with AI-powered metrics</li>
+            <li><strong>Quality Scoring:</strong> Get comprehensive quality scores across multiple dimensions</li>
+            <li><strong>Project Comparison:</strong> Compare multiple projects side-by-side</li>
+            <li><strong>AI Chatbot:</strong> Ask questions about your code and get instant answers</li>
+            <li><strong>Detailed Reports:</strong> Generate comprehensive analysis reports</li>
+          </ul>
         </div>
 
         <div className="settings-info-card">
-          <h3>📊 Version Information</h3>
+          <h3>Version Information</h3>
           <p>
             <strong>Version:</strong> 1.0.0<br/>
             <strong>Release Date:</strong> March 2026<br/>
@@ -37,7 +37,7 @@ export default function AboutSettings() {
         </div>
 
         <div className="settings-info-card">
-          <h3>🛠️ Technology Stack</h3>
+          <h3>Technology Stack</h3>
           <p>
             <strong>Frontend:</strong> React 19, Vite, Apollo Client, Framer Motion<br/>
             <strong>Backend:</strong> Django, GraphQL, Celery<br/>

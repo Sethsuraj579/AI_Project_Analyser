@@ -100,6 +100,11 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
   const cardsRef = useRef([]);
   const headerRef = useRef(null);
   const [hoveredCard, setHoveredCard] = useState(null);
+  const planHighlights = [
+    { label: 'Start free', value: 'No credit card required' },
+    { label: 'Upgrade anytime', value: 'Scale when you need more' },
+    { label: 'Secure billing', value: 'Razorpay protected payments' },
+  ];
 
   // Debug logging
   useEffect(() => {
@@ -184,11 +189,11 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
     if (isEntering) {
       setHoveredCard(index);
       gsap.to(card, {
-        scale: 1.05,
-        rotateY: 5,
-        z: 50,
-        boxShadow: '0 20px 60px rgba(79, 70, 229, 0.4)',
-        duration: 0.3,
+        scale: 1.01,
+        rotateY: 0,
+        z: 0,
+        boxShadow: '0 18px 38px rgba(24, 43, 91, 0.36)',
+        duration: 0.22,
         ease: 'power2.out',
       });
       
@@ -205,8 +210,8 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
         scale: 1,
         rotateY: 0,
         z: 0,
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-        duration: 0.3,
+        boxShadow: '0 14px 34px rgba(8, 14, 30, 0.34)',
+        duration: 0.22,
         ease: 'power2.inOut',
       });
     }
@@ -233,31 +238,51 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
     };
   });
 
+  const selectedPlanLabel = selectedPlan ? selectedPlan.toUpperCase() : 'FREE';
+
 
 
   if (plans.length === 0) {
-    return <div className="pricing-container"><p style={{ color: '#fff', textAlign: 'center', padding: '40px' }}>No plans configured yet</p></div>;
+    return <div className="pricing-container"><p className="pricing-notice">No plans configured yet</p></div>;
   }
 
   return (
     <>
       <div className="pricing-container">
         {loading && (
-          <p style={{ color: '#9ca3af', textAlign: 'center', marginBottom: '16px' }}>
+          <p className="pricing-notice pricing-notice-info">
             Loading plans from server...
           </p>
         )}
         {error && (
-          <p style={{ color: '#fbbf24', textAlign: 'center', marginBottom: '16px' }}>
+          <p className="pricing-notice pricing-notice-warning">
             Showing default plans while server data is unavailable.
           </p>
         )}
-        <div className="pricing-header" ref={headerRef}>
-          <h1>Choose Your Plan</h1>
-          <p>Flexible pricing for projects of any size</p>
-        </div>
+        <section className="pricing-module-shell">
+          <div className="pricing-header-row" ref={headerRef}>
+            <div className="pricing-header">
+              <div className="pricing-eyebrow">Subscription Plans</div>
+              <h1>Choose Your Plan</h1>
+              <p>Flexible pricing for projects of any size</p>
+            </div>
+            <div className="pricing-header-meta">
+              <span className="pricing-meta-label">Current selection</span>
+              <strong className="pricing-meta-value">{selectedPlanLabel}</strong>
+              <span className="pricing-meta-sub">Secure billing • Cancel anytime</span>
+            </div>
+          </div>
 
-        <div className="pricing-grid">
+          <div className="pricing-highlights">
+            {planHighlights.map((item) => (
+              <div className="pricing-highlight-card" key={item.label}>
+                <span className="pricing-highlight-label">{item.label}</span>
+                <span className="pricing-highlight-value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="pricing-grid">
           {plans.map((plan, index) => (
             <div
               key={plan.id}
@@ -269,7 +294,7 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               onMouseLeave={() => handleCardHover(index, false)}
             >
               <div className="plan-badge">
-                {plan.normalizedName === 'basic' ? '⭐ MOST POPULAR' : plan.name}
+                {plan.normalizedName === 'basic' ? 'MOST POPULAR' : plan.name}
               </div>
               <h2>{plan.description}</h2>
 
@@ -313,7 +338,8 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               </button>
             </div>
           ))}
-        </div>
+          </div>
+        </section>
       </div>
 
       {/* Payment Modal */}

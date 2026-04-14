@@ -184,11 +184,7 @@ export default function ProfileSettings() {
         <p className="subtitle">Update your personal information and email address</p>
 
         {message && (
-          <div className={`settings-info-card ${message.type === 'error' ? 'error' : 'success'}`} 
-               style={{ 
-                 borderLeft: `4px solid ${message.type === 'error' ? 'var(--accent-red)' : 'var(--accent-green)'}`,
-                 marginBottom: '24px' 
-               }}>
+          <div className={`settings-info-card settings-callout ${message.type === 'error' ? 'error' : 'success'}`}>
             <p>{message.text}</p>
           </div>
         )}

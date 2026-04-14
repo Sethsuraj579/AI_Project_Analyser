@@ -2,7 +2,17 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { LOGIN_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import BrandMark from '../components/BrandMark';
 import './Auth.css';
+
+function MailMark() {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="8" y="12" width="32" height="24" rx="6" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M11 17l13 10 13-10" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function Login({ onLogin, onSwitchToRegister }) {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -114,7 +124,7 @@ function Login({ onLogin, onSwitchToRegister }) {
         <div className="auth-container">
           <div className="auth-card">
             <div className="auth-header">
-              <span className="auth-logo">✉️</span>
+              <span className="auth-logo"><MailMark /></span>
               <h1>Verify Your Email</h1>
               <p>
                 A verification code has been sent to{' '}
@@ -177,7 +187,7 @@ function Login({ onLogin, onSwitchToRegister }) {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <span className="auth-logo">🔬</span>
+            <span className="auth-logo"><BrandMark /></span>
             <h1>Welcome Back</h1>
             <p>Sign in to access your AI Project Analyser dashboard</p>
           </div>

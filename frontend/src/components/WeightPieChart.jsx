@@ -15,23 +15,33 @@ function WeightPieChart({ metrics, configs }) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={340}>
       <PieChart>
         <Pie
           data={data}
           cx="50%"
-          cy="50%"
-          innerRadius={55}
-          outerRadius={90}
+          cy="44%"
+          innerRadius={52}
+          outerRadius={88}
           paddingAngle={3}
           dataKey="value"
           label={({ name, value }) => `${name}: ${value}%`}
-          labelLine={{ stroke: '#6b6b80' }}
+          labelLine={{ stroke: '#6b6b80', strokeWidth: 1 }}
         >
           {data.map((entry, i) => (
             <Cell key={i} fill={COLORS[i % COLORS.length]} />
           ))}
         </Pie>
+        <Legend
+          verticalAlign="bottom"
+          align="center"
+          iconType="circle"
+          wrapperStyle={{
+            paddingTop: 10,
+            fontSize: '0.8rem',
+            color: '#a0a0b8',
+          }}
+        />
         <Tooltip
           contentStyle={{
             background: '#1a1a2e',

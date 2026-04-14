@@ -31,8 +31,8 @@ export default function ContactSettings() {
         <p className="subtitle">Get in touch with our support team</p>
 
         {submitted && (
-          <div className="settings-info-card" style={{ borderLeft: '4px solid var(--accent-green)', marginBottom: '24px' }}>
-            <p>✅ Thank you for contacting us! We'll get back to you within 24-48 hours.</p>
+          <div className="settings-info-card settings-callout success">
+            <p>Thank you for contacting us. We’ll get back to you within 24-48 hours.</p>
           </div>
         )}
 
@@ -106,7 +106,7 @@ export default function ContactSettings() {
         <p className="subtitle">Choose your preferred contact method</p>
 
         <div className="settings-info-card">
-          <h3>📧 Email Support</h3>
+          <h3>Email Support</h3>
           <p>
             <strong>General:</strong> support@aiprojectanalyser.com<br/>
             <strong>Technical:</strong> tech@aiprojectanalyser.com<br/>
@@ -115,17 +115,17 @@ export default function ContactSettings() {
         </div>
 
         <div className="settings-info-card">
-          <h3>💬 Live Chat</h3>
+          <h3>Live Chat</h3>
           <p>
             Available Monday - Friday, 9 AM - 6 PM EST<br/>
-            <button className="settings-btn settings-btn-secondary" style={{ marginTop: '12px' }}>
+            <button className="settings-btn settings-btn-secondary settings-card-actions">
               Start Chat
             </button>
           </p>
         </div>
 
         <div className="settings-info-card">
-          <h3>🌐 Social Media</h3>
+          <h3>Social Media</h3>
           <p>
             Follow us on Twitter, LinkedIn, and GitHub for updates and announcements.
           </p>

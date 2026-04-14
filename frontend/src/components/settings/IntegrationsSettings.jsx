@@ -220,10 +220,7 @@ export default function IntegrationsSettings() {
         <p className="subtitle">Configure outbound webhooks to notify your external systems.</p>
 
         {message && (
-          <div
-            className="settings-info-card"
-            style={{ borderLeft: `4px solid ${message.type === 'error' ? 'var(--accent-red)' : 'var(--accent-green)'}` }}
-          >
+          <div className={`settings-info-card settings-callout ${message.type === 'error' ? 'error' : 'success'}`}>
             <p>{message.text}</p>
           </div>
         )}
@@ -322,7 +319,7 @@ export default function IntegrationsSettings() {
                       ))}
                     </div>
                   </div>
-                  <div className="settings-btn-group" style={{ justifyContent: 'flex-end' }}>
+                  <div className="settings-btn-group settings-actions-right">
                     <button
                       type="button"
                       className="settings-btn settings-btn-secondary"

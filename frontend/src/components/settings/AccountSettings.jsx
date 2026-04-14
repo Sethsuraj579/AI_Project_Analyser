@@ -337,7 +337,7 @@ export default function AccountSettings() {
         ) : (
           <>
             <div className="settings-info-card">
-              <h3>🔐 Enable 2FA</h3>
+              <h3>Enable 2FA</h3>
               <p>Two-factor authentication adds an additional layer of security by requiring a verification code in addition to your password.</p>
             </div>
 
@@ -382,13 +382,13 @@ export default function AccountSettings() {
             {twoFactorData.showVerify && twoFactorData.qrCodeUrl && (
               <div>
                 <div className="settings-info-card">
-                  <h3>📱 Scan QR Code</h3>
+                  <h3>Scan QR Code</h3>
                   <p>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
-                  <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                    <img src={twoFactorData.qrCodeUrl} alt="2FA QR Code" style={{ maxWidth: '300px' }} />
+                  <div className="settings-qr-wrap">
+                    <img src={twoFactorData.qrCodeUrl} alt="2FA QR Code" className="settings-qr-code" />
                   </div>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                    Manual entry key: <code style={{ background: 'var(--bg-tertiary)', padding: '4px 8px', borderRadius: '4px' }}>{twoFactorData.secret}</code>
+                  <p className="settings-qr-secret">
+                    Manual entry key: <code>{twoFactorData.secret}</code>
                   </p>
                 </div>
                 <form onSubmit={handleVerify2FA}>
@@ -430,17 +430,13 @@ export default function AccountSettings() {
         <p className="subtitle">Permanent actions that cannot be undone</p>
         
         {deleteMessage && (
-          <div className={`settings-info-card error`} 
-               style={{ 
-                 borderLeft: '4px solid var(--accent-red)',
-                 marginBottom: '24px' 
-               }}>
+          <div className="settings-info-card settings-callout error">
             <p>{deleteMessage.text}</p>
           </div>
         )}
 
-        <div className="settings-info-card" style={{ borderLeft: '4px solid var(--accent-red)' }}>
-          <h3>⚠️ Delete Account</h3>
+        <div className="settings-info-card settings-callout error">
+          <h3>Delete Account</h3>
           <p>Once you delete your account, there is no going back. All your data, projects, and analyses will be permanently removed.</p>
         </div>
 

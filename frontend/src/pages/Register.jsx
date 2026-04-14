@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { SEND_OTP, REGISTER_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import BrandMark from '../components/BrandMark';
 import './Auth.css';
 
 function Register({ onLogin, onSwitchToLogin }) {
@@ -172,7 +173,7 @@ function Register({ onLogin, onSwitchToLogin }) {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <span className="auth-logo">🔬</span>
+            <span className="auth-logo"><BrandMark /></span>
             <h1>
               {step === 1 ? 'Create Account' : step === 2 ? 'Verify Email' : 'Verify Email'}
             </h1>
@@ -289,7 +290,7 @@ function Register({ onLogin, onSwitchToLogin }) {
                 </svg>
                 Back
               </button>
-              <p style={{ color: '#6b6b80', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center' }}>
+              <p className="auth-helper-text">
                 We sent a 6-digit code to{' '}
                 <span className="auth-email-highlight">{form.email}</span>
               </p>
@@ -348,7 +349,7 @@ function Register({ onLogin, onSwitchToLogin }) {
                 </svg>
                 Back
               </button>
-              <p style={{ color: '#6b6b80', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center' }}>
+              <p className="auth-helper-text">
                 We sent a 6-digit code to{' '}
                 <span className="auth-email-highlight">{googleEmail}</span>
               </p>

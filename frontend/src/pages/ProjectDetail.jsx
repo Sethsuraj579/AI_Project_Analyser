@@ -13,6 +13,7 @@ import ScoreHeatmap from '../components/ScoreHeatmap';
 import ProjectSummary from '../components/ProjectSummary';
 import ProjectReportDownload from '../components/ProjectReportDownload';
 import ProjectComparison from '../components/ProjectComparison';
+import './ProjectDetail.css';
 
 function ProjectDetail() {
   const { id } = useParams();
@@ -33,6 +34,8 @@ function ProjectDetail() {
   const configs = data?.dimensionConfigs || [];
   const trends = project.trends || [];
   const runs = project.analysisRuns || [];
+  const latestStatus = run?.status || 'Not Run';
+  const latestGrade = run?.overallGrade || '—';
 
   const handleRunAnalysis = async () => {
     setAnalysisError(null);
@@ -50,29 +53,37 @@ function ProjectDetail() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+    <div className="detail-page">
+      <section className="detail-panel detail-hero">
+        <div className="detail-hero-copy">
           <h2>{project.name}</h2>
           <p>{project.description || 'AI-powered project analysis report'}</p>
+          <div className="detail-meta-strip">
+            <span className="detail-meta-item">
+              <strong>{runs.length}</strong>
+              <span>Total Runs</span>
+            </span>
+            <span className="detail-meta-item">
+              <strong>{latestStatus}</strong>
+              <span>Latest Status</span>
+            </span>
+            <span className="detail-meta-item">
+              <strong>{latestGrade}</strong>
+              <span>Latest Grade</span>
+            </span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {run && <OverallScoreGauge score={run.overallScore} grade={run.overallGrade} size={80} />}
-          <button
-            className="btn btn-primary"
-            onClick={handleRunAnalysis}
-            disabled={analysing}
-          >
-            {analysing ? '⏳ Analysing...' : '▶ Run Analysis'}
+        <div className="detail-hero-actions">
+          {run && <OverallScoreGauge score={run.overallScore} grade={run.overallGrade} size={78} />}
+          <button className="btn btn-primary" onClick={handleRunAnalysis} disabled={analysing}>
+            {analysing ? 'Analysing...' : 'Run Analysis'}
           </button>
-          {analysisError && (
-            <div style={{ background: '#fee', color: '#c00', padding: '8px 14px', borderRadius: 8, fontSize: '0.85rem', marginTop: 8 }}>
-              {analysisError}
-            </div>
-          )}
         </div>
-      </div>
+      </section>
+
+      {analysisError && (
+        <div className="detail-inline-error">{analysisError}</div>
+      )}
 
       {!run ? (
         <div className="empty-state">
@@ -81,116 +92,161 @@ function ProjectDetail() {
         </div>
       ) : (
         <>
-          {/* Row 1: Radar + Bar + Pie */}
-          <div className="grid-3" style={{ marginBottom: 24 }}>
-            <div className="card">
-              <h3 className="card-title">📊 Dimension Radar</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                Overall project health across all 7 dimensions
-              </p>
-              <DimensionRadarChart metrics={metrics} />
+          <section className="detail-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Overview Charts</span>
+                <h3>Performance Overview</h3>
+                <p>Core score visualizations across dimensions and weighting.</p>
+              </div>
+              <span className="detail-head-meta">3 chart cards</span>
             </div>
-            <div className="card">
-              <h3 className="card-title">📈 Score Comparison</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                Normalised scores with threshold indicators
-              </p>
-              <DimensionBarChart metrics={metrics} />
+            <div className="detail-grid-3">
+              <div className="detail-card detail-chart-card">
+                <h4 className="detail-card-title">Dimension Radar</h4>
+                <p className="detail-card-note">Overall project health across all 7 dimensions</p>
+                <DimensionRadarChart metrics={metrics} />
+              </div>
+              <div className="detail-card detail-chart-card">
+                <h4 className="detail-card-title">Score Comparison</h4>
+                <p className="detail-card-note">Normalised scores with threshold indicators</p>
+                <DimensionBarChart metrics={metrics} />
+              </div>
+              <div className="detail-card detail-chart-card">
+                <h4 className="detail-card-title">Weight Distribution</h4>
+                <p className="detail-card-note">How each dimension contributes to the overall score</p>
+                <WeightPieChart metrics={metrics} configs={configs} />
+              </div>
             </div>
-            <div className="card">
-              <h3 className="card-title">⚖️ Weight Distribution</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 12 }}>
-                How each dimension contributes to the overall score
-              </p>
-              <WeightPieChart metrics={metrics} configs={configs} />
+          </section>
+
+          <section className="detail-panel detail-card-panel detail-spacious-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Metric Gauges</span>
+                <h3>Real-Time Dimension Scores</h3>
+                <p>Individual performance gauges for each analysis dimension.</p>
+              </div>
+              <span className="detail-head-meta">Live snapshot</span>
             </div>
-          </div>
-
-          {/* Row 2: Individual Metric Gauges */}
-          <div className="card" style={{ marginBottom: 24 }}>
-            <h3 className="card-title">🎯 Metric Gauges — Real-Time Scores</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Individual performance gauges for each dimension
-            </p>
-            <MetricGaugeGrid metrics={metrics} />
-          </div>
-
-          {/* Row 3: Score Heatmap */}
-          <div className="card" style={{ marginBottom: 24 }}>
-            <h3 className="card-title">🗺️ Score Heatmap</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Visual heatmap of scores across all dimensions
-            </p>
-            <ScoreHeatmap metrics={metrics} runs={runs} />
-          </div>
-
-          {/* Row 4: Trend Charts per dimension */}
-          <div className="card" style={{ marginBottom: 24 }}>
-            <h3 className="card-title">📉 Historical Trends</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-              Metric trends over time for each dimension
-            </p>
-            <TrendLineChart trends={trends} />
-          </div>
-
-          {/* Row 5: Detailed Metric Cards */}
-          <h3 style={{ marginBottom: 16, fontSize: '1.2rem' }}>📋 Dimension Detail Report</h3>
-          <div className="grid-2" style={{ marginBottom: 24 }}>
-            {metrics.map((metric) => (
-              <MetricDetailCard key={metric.id} metric={metric} configs={configs} />
-            ))}
-          </div>
-
-          {/* Row 6: AI Summary & PDF Report */}
-          <div className="grid-2" style={{ marginBottom: 24 }}>
-            <div className="card">
-              <ProjectSummary projectId={project.id} />
+            <div className="detail-content-frame">
+              <MetricGaugeGrid metrics={metrics} />
             </div>
-            <div className="card">
-              <ProjectReportDownload projectId={project.id} projectName={project.name} />
+          </section>
+
+          <section className="detail-panel detail-card-panel detail-spacious-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Score Heatmap</span>
+                <h3>Cross-Run Intensity View</h3>
+                <p>Visual intensity map of score movements across dimensions.</p>
+              </div>
+              <span className="detail-head-meta">Historical matrix</span>
             </div>
-          </div>
+            <div className="detail-content-frame">
+              <ScoreHeatmap metrics={metrics} runs={runs} />
+            </div>
+          </section>
 
-          {/* Row 7: Project-to-Project Comparison */}
-          <div className="card" style={{ marginBottom: 24 }}>
-            <ProjectComparison projectId={project.id} />
-          </div>
+          <section className="detail-panel detail-card-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Historical Trends</span>
+                <h3>Score Trajectory Over Time</h3>
+                <p>Trend lines for each dimension to spot regressions and improvements.</p>
+              </div>
+              <span className="detail-head-meta">Time series</span>
+            </div>
+            <div className="detail-content-frame">
+              <TrendLineChart trends={trends} />
+            </div>
+          </section>
 
-          {/* Run History */}
-          <div className="card">
-            <h3 className="card-title">🕒 Analysis History</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={thStyle}>Run ID</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Score</th>
-                  <th style={thStyle}>Grade</th>
-                  <th style={thStyle}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={tdStyle}>{r.id.slice(0, 8)}…</td>
-                    <td style={tdStyle}><span className="tag">{r.status}</span></td>
-                    <td style={tdStyle}>{r.overallScore?.toFixed(1) ?? '—'}</td>
-                    <td style={tdStyle}>
-                      <span className={`grade-badge grade-${r.overallGrade}`}>{r.overallGrade}</span>
-                    </td>
-                    <td style={tdStyle}>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '—'}</td>
+          <section className="detail-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Dimension Detail Report</span>
+                <h3>Per-Dimension Analysis Notes</h3>
+                <p>Detailed recommendations and score-level diagnostics per dimension.</p>
+              </div>
+              <span className="detail-head-meta">{metrics.length} dimensions</span>
+            </div>
+            <div className="detail-grid-2 detail-metric-grid">
+              {metrics.map((metric) => (
+                <MetricDetailCard key={metric.id} metric={metric} configs={configs} />
+              ))}
+            </div>
+          </section>
+
+          <section className="detail-panel">
+            <div className="detail-section-head">
+              <div>
+                <span className="detail-kicker">Executive Summary & Reports</span>
+                <h3>Decision-Ready Output</h3>
+                <p>AI narrative summary and exportable report pack for stakeholders.</p>
+              </div>
+              <span className="detail-head-meta">Summary + PDF</span>
+            </div>
+            <div className="detail-grid-2">
+              <div className="detail-card">
+                <h4 className="detail-card-title">AI Summary</h4>
+                <p className="detail-card-note">Concise natural-language interpretation of your latest run.</p>
+                <ProjectSummary projectId={project.id} />
+              </div>
+              <div className="detail-card">
+                <h4 className="detail-card-title">Export & Share</h4>
+                <p className="detail-card-note">Generate a professional report document for external review.</p>
+                <ProjectReportDownload projectId={project.id} projectName={project.name} />
+              </div>
+            </div>
+          </section>
+
+          <section className="detail-panel">
+            <div className="detail-section-head">
+              <h3>Project Comparison</h3>
+              <p>Compare this project with your other repositories.</p>
+            </div>
+            <div className="detail-card">
+              <ProjectComparison projectId={project.id} />
+            </div>
+          </section>
+
+          <section className="detail-panel detail-card-panel">
+            <div className="detail-section-head">
+              <h3>Analysis History</h3>
+              <p>Recent runs and historical outcomes for audit and tracking.</p>
+            </div>
+            <div className="detail-table-wrap">
+              <table className="detail-table">
+                <thead>
+                  <tr>
+                    <th>Run ID</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {runs.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.id.slice(0, 8)}…</td>
+                      <td><span className="tag">{r.status}</span></td>
+                      <td>{r.overallScore?.toFixed(1) ?? '—'}</td>
+                      <td>
+                        <span className={`grade-badge grade-${r.overallGrade}`}>{r.overallGrade}</span>
+                      </td>
+                      <td>{r.completedAt ? new Date(r.completedAt).toLocaleString() : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </>
       )}
     </div>
   );
 }
-
-const thStyle = { textAlign: 'left', padding: '10px 12px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 };
-const tdStyle = { padding: '10px 12px', fontSize: '0.9rem' };
 
 export default ProjectDetail;

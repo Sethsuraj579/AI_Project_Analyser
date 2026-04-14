@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { useNavigate } from 'react-router-dom';
 import { CREATE_PROJECT, GET_ALL_PROJECTS } from '../graphql/queries';
+import './NewProject.css';
 
 function NewProject() {
   const navigate = useNavigate();
@@ -38,77 +39,84 @@ function NewProject() {
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <div className="page-header">
+    <div className="new-project-page">
+      <section className="new-project-hero">
         <h2>Create New Project</h2>
-        <p>Add a project to analyse its frontend, backend, database, API, structure, integration & security.</p>
-      </div>
+        <p>Add your repository and optional live URLs to generate a complete AI project report.</p>
+      </section>
 
-      <form onSubmit={handleSubmit} className="card">
-        {error && (
-          <div style={{
-            padding: '12px 16px',
-            marginBottom: 16,
-            background: 'rgba(255, 23, 68, 0.1)',
-            border: '1px solid var(--accent-red, #ff1744)',
-            borderRadius: 'var(--radius-sm, 8px)',
-            color: 'var(--accent-red, #ff1744)',
-            fontSize: '0.9rem',
-          }}>
-            {error}
+      <section className="new-project-panel">
+        <div className="new-project-panel-head">
+          <h3>Project Setup</h3>
+          <p>Fill in your project metadata. Only project name is required to get started.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="new-project-form">
+          {error && <div className="new-project-error">{error}</div>}
+
+          <div className="form-group">
+            <label>Project Name *</label>
+            <input
+              value={form.name}
+              onChange={update('name')}
+              placeholder="My Awesome Project"
+              required
+            />
           </div>
-        )}
-        <div className="form-group">
-          <label>Project Name *</label>
-          <input
-            value={form.name}
-            onChange={update('name')}
-            placeholder="My Awesome Project"
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Description</label>
-          <textarea
-            value={form.description}
-            onChange={update('description')}
-            placeholder="Brief description of the project..."
-            rows={3}
-          />
-        </div>
-        <div className="form-group">
-          <label>Repository URL</label>
-          <input
-            value={form.repoUrl}
-            onChange={update('repoUrl')}
-            placeholder="https://github.com/user/repo"
-          />
-        </div>
-        <div className="form-group">
-          <label>Frontend URL (for real-time probing)</label>
-          <input
-            value={form.frontendUrl}
-            onChange={update('frontendUrl')}
-            placeholder="https://myapp.com"
-          />
-        </div>
-        <div className="form-group">
-          <label>Backend / API URL (for real-time probing)</label>
-          <input
-            value={form.backendUrl}
-            onChange={update('backendUrl')}
-            placeholder="https://api.myapp.com"
-          />
-        </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-          <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? 'Creating...' : '+ Create Project'}
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={() => navigate('/')}>
-            Cancel
-          </button>
-        </div>
-      </form>
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              value={form.description}
+              onChange={update('description')}
+              placeholder="Brief description of the project..."
+              rows={3}
+            />
+          </div>
+
+          <div className="new-project-grid">
+            <div className="form-group">
+              <label>Repository URL</label>
+              <input
+                value={form.repoUrl}
+                onChange={update('repoUrl')}
+                placeholder="https://github.com/user/repo"
+              />
+            </div>
+            <div className="form-group">
+              <label>Frontend URL</label>
+              <input
+                value={form.frontendUrl}
+                onChange={update('frontendUrl')}
+                placeholder="https://myapp.com"
+              />
+            </div>
+            <div className="form-group">
+              <label>Backend / API URL</label>
+              <input
+                value={form.backendUrl}
+                onChange={update('backendUrl')}
+                placeholder="https://api.myapp.com"
+              />
+            </div>
+          </div>
+
+          <div className="new-project-actions">
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Project'}
+            </button>
+            <button className="btn btn-secondary" type="button" onClick={() => navigate('/')}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="new-project-tips">
+        <h4>Tip</h4>
+        <p>
+          Add both repository and live URLs for deeper insight quality, integration checks, and report completeness.
+        </p>
+      </section>
     </div>
   );
 }

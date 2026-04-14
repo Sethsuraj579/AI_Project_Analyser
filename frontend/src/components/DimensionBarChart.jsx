@@ -29,15 +29,16 @@ function DimensionBarChart({ metrics }) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
+    <ResponsiveContainer width="100%" height={340}>
+      <BarChart data={chartData} layout="vertical" margin={{ left: 30, right: 30, top: 10, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
         <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: '#a0a0b8' }} />
         <YAxis
           type="category"
           dataKey="name"
-          width={90}
+          width={110}
           tick={{ fontSize: 11, fill: '#a0a0b8' }}
+          tickMargin={8}
         />
         <Tooltip
           contentStyle={{
@@ -51,8 +52,8 @@ function DimensionBarChart({ metrics }) {
             return [`Score: ${val.toFixed(1)} | Raw: ${p.rawValue}${p.unit} | Grade: ${p.grade}`];
           }}
         />
-        <ReferenceLine x={80} stroke="rgba(0,230,118,0.4)" strokeDasharray="4 4" label={{ value: 'Good', fill: '#6b6b80', fontSize: 10 }} />
-        <ReferenceLine x={50} stroke="rgba(255,214,0,0.4)" strokeDasharray="4 4" label={{ value: 'Warn', fill: '#6b6b80', fontSize: 10 }} />
+        <ReferenceLine x={80} stroke="rgba(0,230,118,0.4)" strokeDasharray="4 4" label={{ value: 'Good', position: 'insideTopRight', fill: '#6b6b80', fontSize: 10 }} />
+        <ReferenceLine x={50} stroke="rgba(255,214,0,0.4)" strokeDasharray="4 4" label={{ value: 'Warn', position: 'insideTopRight', fill: '#6b6b80', fontSize: 10 }} />
         <Bar dataKey="score" radius={[0, 6, 6, 0]} barSize={24}>
           {chartData.map((entry, i) => (
             <Cell key={i} fill={DIMENSION_COLORS[entry.dimension] || '#00d4ff'} />

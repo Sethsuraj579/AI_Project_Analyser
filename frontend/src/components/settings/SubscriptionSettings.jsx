@@ -35,7 +35,7 @@ export default function SubscriptionSettings() {
         <p className="subtitle">View your past invoices and payments</p>
 
         <div className="settings-info-card">
-          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}>
+          <p className="settings-empty-note">
             No billing history available
           </p>
         </div>

@@ -1,0 +1,339 @@
+.detail-page {
+  display: grid;
+  gap: 12px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.detail-panel,
+.detail-inline-error {
+  border: 1px solid rgba(88, 108, 164, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(17, 24, 46, 0.92), rgba(11, 16, 33, 0.96));
+  box-shadow: 0 10px 28px rgba(4, 8, 19, 0.25);
+}
+
+.detail-hero {
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.detail-meta-strip {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-meta-item {
+  border: 1px solid rgba(95, 121, 183, 0.32);
+  border-radius: 10px;
+  background: rgba(13, 22, 43, 0.78);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.detail-meta-item strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #eff4ff;
+}
+
+.detail-meta-item span {
+  font-size: 0.74rem;
+  color: #a7b2cf;
+  font-family: var(--font-pro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-hero-copy h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #eef2ff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.detail-hero-copy p {
+  margin: 6px 0 0;
+  color: #a9b5d3;
+  font-family: var(--font-pro);
+  font-size: 0.9rem;
+}
+
+.detail-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-inline-error {
+  padding: 10px 12px;
+  background: rgba(255, 79, 101, 0.16);
+  border-color: rgba(255, 87, 109, 0.45);
+  color: #ffb3bf;
+  font-size: 0.85rem;
+  font-family: var(--font-pro);
+}
+
+.detail-panel {
+  padding: 14px;
+}
+
+.detail-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-kicker {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(102, 131, 199, 0.42);
+  background: rgba(26, 43, 78, 0.76);
+  color: #bfd2fb;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.detail-head-meta {
+  border: 1px solid rgba(95, 121, 183, 0.34);
+  background: rgba(13, 22, 43, 0.75);
+  color: #aebddd;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detail-section-head h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 650;
+  color: #eef2ff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.detail-section-head p {
+  margin: 4px 0 0;
+  color: #a5b0cb;
+  font-size: 0.84rem;
+  font-family: var(--font-pro);
+}
+
+.detail-card-panel {
+  border: 1px solid rgba(88, 108, 164, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(17, 24, 46, 0.92), rgba(11, 16, 33, 0.96));
+}
+
+.detail-grid-3,
+.detail-grid-2 {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.detail-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-card {
+  border: 1px solid rgba(88, 108, 164, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(20, 26, 47, 0.92), rgba(13, 18, 37, 0.94));
+  padding: 14px;
+}
+
+.detail-chart-card {
+  min-height: 430px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-chart-card :where(.recharts-responsive-container, .recharts-wrapper) {
+  flex: 1;
+  min-height: 340px;
+}
+
+.detail-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 650;
+  color: #eaf0ff;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.detail-card-note {
+  margin: 4px 0 12px;
+  font-size: 0.8rem;
+  color: #a3afca;
+  font-family: var(--font-pro);
+}
+
+.detail-content-frame {
+  border: 1px solid rgba(88, 108, 164, 0.22);
+  border-radius: 12px;
+  background: rgba(12, 20, 39, 0.72);
+  padding: 12px;
+}
+
+.detail-spacious-panel .detail-content-frame {
+  min-height: 340px;
+}
+
+.detail-metric-grid {
+  align-items: start;
+}
+
+.detail-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(88, 108, 164, 0.3);
+  border-radius: 12px;
+  background: rgba(12, 20, 39, 0.88);
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+}
+
+.detail-table th,
+.detail-table td {
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.detail-table th {
+  font-size: 0.8rem;
+  color: #99a8ca;
+  font-weight: 650;
+  border-bottom: 1px solid rgba(88, 108, 164, 0.28);
+  background: rgba(20, 30, 56, 0.82);
+}
+
+.detail-table td {
+  font-size: 0.88rem;
+  color: #dde6ff;
+  border-bottom: 1px solid rgba(88, 108, 164, 0.18);
+}
+
+.detail-table tr:last-child td {
+  border-bottom: none;
+}
+
+.detail-table .tag {
+  border: 1px solid rgba(102, 131, 199, 0.42);
+  background: rgba(26, 43, 78, 0.78);
+  color: #bfd2fb;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+@media (max-width: 920px) {
+  .detail-page {
+    gap: 10px;
+  }
+
+  .detail-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-meta-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .detail-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .detail-panel,
+  .detail-inline-error {
+    border-radius: 12px;
+  }
+
+  .detail-hero,
+  .detail-panel,
+  .detail-card {
+    padding: 12px;
+  }
+
+  .detail-hero-copy h2 {
+    font-size: 1.2rem;
+  }
+
+  .detail-hero-copy p {
+    font-size: 0.84rem;
+  }
+
+  .detail-section-head h3 {
+    font-size: 0.94rem;
+  }
+
+  .detail-section-head p,
+  .detail-card-note {
+    font-size: 0.78rem;
+  }
+
+  .detail-chart-card {
+    min-height: 380px;
+  }
+
+  .detail-chart-card :where(.recharts-responsive-container, .recharts-wrapper) {
+    min-height: 300px;
+  }
+
+  .detail-spacious-panel .detail-content-frame {
+    min-height: 280px;
+  }
+
+  .detail-head-meta {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+
+  .detail-kicker {
+    font-size: 0.66rem;
+  }
+}

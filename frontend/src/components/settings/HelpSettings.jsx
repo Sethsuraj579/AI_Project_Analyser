@@ -60,28 +60,22 @@ export default function HelpSettings() {
             placeholder="Search help articles..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ marginBottom: '24px' }}
           />
         </div>
 
-        <div style={{ marginBottom: '32px' }}>
+        <div className="settings-stack">
           {filteredFAQs.map((item, index) => (
             <div
               key={index}
-              className="settings-info-card"
-              style={{
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                borderLeft: expandedIndex === index ? '4px solid var(--accent)' : '4px solid transparent'
-              }}
+              className={`settings-info-card settings-faq-card ${expandedIndex === index ? 'active' : ''}`}
               onClick={() => toggleFAQ(index)}
             >
-              <h3 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {item.question}
-                <span style={{ fontSize: '1.2rem' }}>{expandedIndex === index ? '−' : '+'}</span>
+              <h3 className="settings-faq-question">
+                <span>{item.question}</span>
+                <span className="settings-faq-toggle">{expandedIndex === index ? '−' : '+'}</span>
               </h3>
               {expandedIndex === index && (
-                <p style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                <p className="settings-faq-answer">
                   {item.answer}
                 </p>
               )}
@@ -91,7 +85,7 @@ export default function HelpSettings() {
 
         {filteredFAQs.length === 0 && (
           <div className="settings-info-card">
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p className="settings-empty-note">
               No results found for "{searchQuery}"
             </p>
           </div>
@@ -105,7 +99,7 @@ export default function HelpSettings() {
         <p className="subtitle">Get started in 3 easy steps</p>
 
         <div className="settings-info-card">
-          <h3>1️⃣ Create a Project</h3>
+          <h3>Create a Project</h3>
           <p>
             Click "+ New Project" and paste your GitHub repository URL. Our AI will clone and analyze 
             your code automatically.
@@ -113,7 +107,7 @@ export default function HelpSettings() {
         </div>
 
         <div className="settings-info-card">
-          <h3>2️⃣ Review Insights</h3>
+          <h3>Review Insights</h3>
           <p>
             Explore the dashboard to see your project's quality score, dimension breakdowns, charts, 
             and detailed metrics. Click on any metric to learn more.
@@ -121,7 +115,7 @@ export default function HelpSettings() {
         </div>
 
         <div className="settings-info-card">
-          <h3>3️⃣ Chat with AI</h3>
+          <h3>Chat with AI</h3>
           <p>
             Use the chatbot to ask questions about your code. Try asking "What can I improve?" or 
             "Explain the authentication module".
@@ -136,17 +130,17 @@ export default function HelpSettings() {
         <p className="subtitle">Learn by watching</p>
 
         <div className="settings-info-card">
-          <h3>📺 Getting Started with AI Project Analyser</h3>
+          <h3>Getting Started with AI Project Analyser</h3>
           <p>A comprehensive 5-minute tutorial covering account setup, project creation, and basic features.</p>
-          <button className="settings-btn settings-btn-secondary" style={{ marginTop: '12px' }}>
+          <button className="settings-btn settings-btn-secondary settings-card-actions">
             Watch Video
           </button>
         </div>
 
         <div className="settings-info-card">
-          <h3>📺 Understanding Quality Metrics</h3>
+          <h3>Understanding Quality Metrics</h3>
           <p>Deep dive into how we calculate quality scores and what each metric means for your project.</p>
-          <button className="settings-btn settings-btn-secondary" style={{ marginTop: '12px' }}>
+          <button className="settings-btn settings-btn-secondary settings-card-actions">
             Watch Video
           </button>
         </div>
@@ -162,7 +156,7 @@ export default function HelpSettings() {
           <p>
             Can't find what you're looking for? Our support team is ready to help!
           </p>
-          <div className="settings-btn-group" style={{ marginTop: '16px' }}>
+          <div className="settings-btn-group settings-card-actions">
             <button className="settings-btn settings-btn-primary">
               Contact Support
             </button>

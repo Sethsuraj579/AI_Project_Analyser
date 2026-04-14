@@ -22,7 +22,7 @@ export default function TermsSettings() {
             Permission is granted to temporarily access the Service for personal, non-commercial use only. 
             This is the grant of a license, not a transfer of title, and under this license you may not:
           </p>
-          <ul style={{ marginLeft: '20px', marginTop: '8px', color: 'var(--text-secondary)' }}>
+          <ul className="settings-list-compact">
             <li>Modify or copy the materials</li>
             <li>Use the materials for any commercial purpose</li>
             <li>Attempt to decompile or reverse engineer any software contained on the Service</li>
