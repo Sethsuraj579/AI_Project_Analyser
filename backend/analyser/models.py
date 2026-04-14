@@ -70,6 +70,14 @@ class Plan(models.Model):
     max_analyses_per_month = models.IntegerField(help_text="Maximum analyses per month (-1 for unlimited)")
     price_per_month = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     features = models.JSONField(default=list, blank=True, help_text="List of features included in this plan")
+    razorpay_plan_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        db_index=True,
+        help_text="Cached Razorpay plan ID to avoid creating duplicate remote plans",
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

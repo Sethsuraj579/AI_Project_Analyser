@@ -14,7 +14,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.shapes import Drawing, String, Rect, Circle
@@ -144,11 +144,11 @@ def _build_dimension_bar_chart(metrics):
     labels = [m.get_dimension_display() for m in metrics]
     values = [float(m.normalised_score or 0) for m in metrics]
 
-    drawing = Drawing(460, 220)
+    drawing = Drawing(460, 190)
     chart = VerticalBarChart()
     chart.x = 45
-    chart.y = 40
-    chart.height = 145
+    chart.y = 30
+    chart.height = 126
     chart.width = 380
     chart.data = [values]
     chart.valueAxis.valueMin = 0
@@ -164,7 +164,7 @@ def _build_dimension_bar_chart(metrics):
     chart.bars[0].fillColor = colors.HexColor("#0B84F3")
     chart.bars[0].strokeColor = colors.HexColor("#0763B8")
     drawing.add(chart)
-    drawing.add(String(45, 198, "Dimension Score Distribution (0-100)", fontSize=10, fillColor=colors.HexColor("#1E293B")))
+    drawing.add(String(45, 170, "Dimension Score Distribution (0-100)", fontSize=10, fillColor=colors.HexColor("#1E293B")))
     return drawing
 
 
@@ -187,12 +187,12 @@ def _build_grade_pie_chart(metrics):
         labels = ["No Grades"]
         data = [1]
 
-    drawing = Drawing(460, 220)
+    drawing = Drawing(460, 190)
     pie = Pie()
-    pie.x = 90
-    pie.y = 25
-    pie.width = 150
-    pie.height = 150
+    pie.x = 122
+    pie.y = 30
+    pie.width = 126
+    pie.height = 126
     pie.data = data
     pie.labels = labels
     pie.slices.strokeWidth = 0.5
@@ -208,7 +208,7 @@ def _build_grade_pie_chart(metrics):
         pie.slices[idx].fillColor = palette[idx % len(palette)]
 
     drawing.add(pie)
-    drawing.add(String(45, 198, "Grade Distribution", fontSize=10, fillColor=colors.HexColor("#1E293B")))
+    drawing.add(String(45, 170, "Grade Distribution", fontSize=10, fillColor=colors.HexColor("#1E293B")))
     return drawing
 
 
@@ -341,12 +341,13 @@ def download_project_report_pdf(request, project_id):
         story.extend([metrics_table, Spacer(1, 12)])
 
         if metrics:
-            story.append(Paragraph("Pictorial Insights", heading_style))
-            story.extend([
+            pictorial_block = KeepTogether([
+                Paragraph("Pictorial Insights", heading_style),
                 _build_dimension_bar_chart(metrics),
-                Spacer(1, 10),
+                Spacer(1, 6),
                 _build_grade_pie_chart(metrics),
             ])
+            story.append(pictorial_block)
     else:
         story.extend([
             Paragraph("Executive Summary", heading_style),
@@ -363,4 +364,7 @@ def download_project_report_pdf(request, project_id):
     filename = f"{slugify(project.name) or 'project'}-analysis-report.pdf"
     response = HttpResponse(pdf_data, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Transfer-Encoding"] = "binary"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "no-store"
     return response

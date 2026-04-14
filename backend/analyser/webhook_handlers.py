@@ -45,11 +45,11 @@ def handle_payment_captured(event):
         order_id = payment_entity.get("order_id")
         subscription_id = payment_entity.get("subscription_id")
 
-        payment = Payment.objects.filter(
-            razorpay_order_id=order_id
-        ).first() or Payment.objects.filter(
-            razorpay_subscription_id=subscription_id
-        ).first()
+        payment = None
+        if order_id:
+            payment = Payment.objects.filter(razorpay_order_id=order_id).first()
+        if not payment and subscription_id:
+            payment = Payment.objects.filter(razorpay_subscription_id=subscription_id).first()
 
         if not payment:
             logger.warning("Payment not found for order %s", order_id)
@@ -57,7 +57,7 @@ def handle_payment_captured(event):
 
         payment.status = "succeeded"
         payment.succeeded_at = timezone.now()
-        payment.razorpay_payment_id = payment_id or ""
+        payment.razorpay_payment_id = payment_id or None
         payment.save()
 
         if payment.plan:
@@ -92,15 +92,15 @@ def handle_payment_failed(event):
         order_id = payment_entity.get("order_id")
         subscription_id = payment_entity.get("subscription_id")
 
-        payment = Payment.objects.filter(
-            razorpay_order_id=order_id
-        ).first() or Payment.objects.filter(
-            razorpay_subscription_id=subscription_id
-        ).first()
+        payment = None
+        if order_id:
+            payment = Payment.objects.filter(razorpay_order_id=order_id).first()
+        if not payment and subscription_id:
+            payment = Payment.objects.filter(razorpay_subscription_id=subscription_id).first()
 
         if payment:
             payment.status = "failed"
-            payment.razorpay_payment_id = payment_id or ""
+            payment.razorpay_payment_id = payment_id or None
             payment.save()
             logger.warning("Payment failed for user %s", payment.user.email)
 

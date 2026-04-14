@@ -55,28 +55,34 @@ def create_subscription(user, plan):
     client = _get_client()
     amount_paise = int(Decimal(plan.price_per_month) * 100)
 
-    plan_response = client.plan.create(
-        {
-            "period": "monthly",
-            "interval": 1,
-            "item": {
-                "name": f"{plan.name.upper()} Plan",
-                "amount": amount_paise,
-                "currency": "INR",
-                "description": plan.description or f"{plan.name} subscription",
-            },
-            "notes": {
-                "plan_id": str(plan.id),
-                "plan_name": plan.name,
-            },
-        }
-    )
+    razorpay_plan_id = plan.razorpay_plan_id
+    if not razorpay_plan_id:
+        plan_response = client.plan.create(
+            {
+                "period": "monthly",
+                "interval": 1,
+                "item": {
+                    "name": f"{plan.name.upper()} Plan",
+                    "amount": amount_paise,
+                    "currency": "INR",
+                    "description": plan.description or f"{plan.name} subscription",
+                },
+                "notes": {
+                    "plan_id": str(plan.id),
+                    "plan_name": plan.name,
+                },
+            }
+        )
+        razorpay_plan_id = plan_response["id"]
+        plan.razorpay_plan_id = razorpay_plan_id
+        plan.save(update_fields=["razorpay_plan_id", "updated_at"])
+        logger.info("Cached Razorpay plan ID %s for local plan %s", razorpay_plan_id, plan.name)
 
     total_count = 12 if plan.name == "basic" else 120
 
     subscription = client.subscription.create(
         {
-            "plan_id": plan_response["id"],
+            "plan_id": razorpay_plan_id,
             "total_count": total_count,
             "quantity": 1,
             "customer_notify": 1,

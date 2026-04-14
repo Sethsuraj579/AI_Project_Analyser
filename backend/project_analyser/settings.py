@@ -184,6 +184,31 @@ import certifi
 
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
+if REDIS_URL.startswith(("redis://", "rediss://")):
+    cache_options = {}
+    if REDIS_URL.startswith("rediss://"):
+        cache_options = {
+            "OPTIONS": {
+                "ssl_cert_reqs": "required",
+                "ssl_ca_certs": certifi.where(),
+            }
+        }
+
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            **cache_options,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "ai-project-analyser-cache",
+        }
+    }
+
 # Add ssl_cert_reqs parameter for rediss:// URLs with proper certificate validation
 if REDIS_URL.startswith("rediss://"):
     if "ssl_cert_reqs" not in REDIS_URL:
@@ -269,11 +294,18 @@ LOGGING = {
 # Security hardening
 # ──────────────────────────────────────────────────────────────
 SECURE_SSL_REDIRECT = not DEBUG
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if not DEBUG else None
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0  # 1 year in production
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"

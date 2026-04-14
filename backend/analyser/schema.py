@@ -10,6 +10,7 @@ import graphql_jwt
 import logging
 from graphene_django import DjangoObjectType
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.utils import timezone
@@ -41,6 +42,32 @@ def _require_auth(info):
     if not user or not user.is_authenticated:
         raise Exception("Authentication required. Please provide a valid JWT token.")
     return user
+
+
+def _client_ip(info):
+    request = info.context
+    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
+def _check_auth_rate_limit(info, action, limit=5, window_seconds=600):
+    ip_address = _client_ip(info)
+    cache_key = f"auth-rate:{action}:{ip_address}"
+    attempts = cache.get(cache_key, 0)
+
+    if attempts >= limit:
+        raise Exception("Too many attempts. Please wait and try again later.")
+
+    if attempts == 0:
+        cache.set(cache_key, 1, timeout=window_seconds)
+        return
+
+    try:
+        cache.incr(cache_key)
+    except ValueError:
+        cache.set(cache_key, attempts + 1, timeout=window_seconds)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -675,6 +702,7 @@ class SendOTP(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, email):
+        _check_auth_rate_limit(info, "send-otp", limit=3, window_seconds=600)
         email = email.strip().lower()
         if not email or "@" not in email:
             return SendOTP(success=False, message="Invalid email address.")
@@ -709,6 +737,7 @@ class VerifyOTP(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, email, otp_code):
+        _check_auth_rate_limit(info, "verify-otp", limit=10, window_seconds=600)
         email = email.strip().lower()
         if EmailOTP.verify(email, otp_code.strip()):
             return VerifyOTP(success=True, message="Email verified successfully.")
@@ -729,6 +758,7 @@ class RegisterUser(graphene.Mutation):
     token = graphene.String()
 
     def mutate(self, info, username, email, password, otp_code):
+        _check_auth_rate_limit(info, "register-user", limit=5, window_seconds=900)
         email = email.strip().lower()
         username = username.strip()
 
@@ -1170,6 +1200,7 @@ class GoogleAuth(graphene.Mutation):
     is_new_user = graphene.Boolean()
 
     def mutate(self, info, google_token):
+        _check_auth_rate_limit(info, "google-auth", limit=5, window_seconds=600)
         try:
             from google.oauth2 import id_token
             from google.auth.transport import requests as google_requests
@@ -1275,6 +1306,7 @@ class LoginUser(graphene.Mutation):
     token = graphene.String()
 
     def mutate(self, info, username, password):
+        _check_auth_rate_limit(info, "login-user", limit=10, window_seconds=600)
         from django.contrib.auth import authenticate
         
         username = username.strip()
@@ -1351,6 +1383,7 @@ class VerifyGoogleOTP(graphene.Mutation):
     token = graphene.String()
 
     def mutate(self, info, email, otp_code):
+        _check_auth_rate_limit(info, "verify-google-otp", limit=10, window_seconds=600)
         email = email.strip().lower()
         otp_code = otp_code.strip()
 
