@@ -197,6 +197,9 @@ class AnalysisRun(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["project", "status", "-completed_at"]),
+        ]
 
     def __str__(self):
         return f"Run {self.id} – {self.project.name} ({self.status})"
@@ -251,6 +254,9 @@ class MetricSnapshot(models.Model):
 
     class Meta:
         ordering = ["dimension"]
+        indexes = [
+            models.Index(fields=["analysis_run", "dimension"]),
+        ]
 
     def __str__(self):
         return f"{self.dimension}: {self.metric_name} = {self.raw_value}{self.unit}"

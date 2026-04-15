@@ -101,6 +101,35 @@ class TestGraphQLQueries(GraphQLTestCase):
         latest = content["data"]["project"]["latestRun"]
         assert latest["overallScore"] == 90.0
 
+    def test_all_projects_latest_run_query_count(self):
+        projects = ProjectFactory.create_batch(4, user=self.user)
+        for project in projects:
+            run = AnalysisRunFactory(project=project, overall_score=91.0, overall_grade="A")
+            MetricSnapshotFactory(analysis_run=run, dimension="frontend")
+
+        query = """
+        query {
+            allProjects {
+                id
+                name
+                latestRun {
+                    overallScore
+                    metrics {
+                        dimension
+                        normalisedScore
+                    }
+                }
+            }
+        }
+        """
+
+        with self.assertNumQueries(5):
+            response = self.query(query)
+
+        content = json.loads(response.content)
+        self.assertResponseNoErrors(response)
+        assert len(content["data"]["allProjects"]) == 4
+
 
 @pytest.mark.django_db
 class TestGraphQLMutations(GraphQLTestCase):

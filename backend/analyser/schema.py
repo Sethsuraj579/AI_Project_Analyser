@@ -15,6 +15,7 @@ from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.utils import timezone
 from datetime import timedelta
+from .query_utils import latest_completed_run, projects_with_latest_run
 from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ, OutboundWebhook
 from .engine import DIMENSION_CONFIG
 from .razorpay_utils import create_order, create_subscription, verify_payment_signature
@@ -141,7 +142,7 @@ class ProjectType(DjangoObjectType):
         return qs[:limit]
 
     def resolve_latest_run(self, info):
-        return self.analysis_runs.filter(status="completed").first()
+        return latest_completed_run(self)
 
     def resolve_summary(self, info):
         return getattr(self, 'summary', None)
@@ -314,13 +315,13 @@ class Query(graphene.ObjectType):
     def resolve_all_projects(self, info):
         user = info.context.user
         if user.is_authenticated:
-            return Project.objects.filter(user=user)
+            return projects_with_latest_run(Project.objects.filter(user=user))
         return Project.objects.none()
 
     def resolve_project(self, info, id):
         user = info.context.user
         if user.is_authenticated:
-            return Project.objects.filter(id=id, user=user).first()
+            return projects_with_latest_run(Project.objects.filter(id=id, user=user)).first()
         return None
 
     def resolve_analysis_run(self, info, id):

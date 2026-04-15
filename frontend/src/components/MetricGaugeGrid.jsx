@@ -27,7 +27,7 @@ function MetricGaugeGrid({ metrics }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
       gap: 16,
     }}>
       {metrics.map((m) => (
@@ -54,12 +54,15 @@ function GaugeMeter({ metric }) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: 16,
+      justifyContent: 'space-between',
+      minHeight: 196,
+      padding: '16px 14px 14px',
       background: 'rgba(255,255,255,0.02)',
       borderRadius: 12,
       border: '1px solid var(--border)',
+      overflow: 'hidden',
     }}>
-      <div style={{ position: 'relative', width: size, height: size / 2 + 20 }}>
+      <div style={{ position: 'relative', width: size, height: size / 2 + 30 }}>
         <svg width={size} height={size / 2 + 10} style={{ overflow: 'visible' }}>
           {/* Background arc */}
           <path
@@ -81,25 +84,43 @@ function GaugeMeter({ metric }) {
         </svg>
         <div style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: 2,
           left: '50%',
           transform: 'translateX(-50%)',
           textAlign: 'center',
         }}>
-          <div style={{ fontSize: 24 }}>{icon}</div>
+          <div style={{ fontSize: 22 }}>{icon}</div>
           <div style={{ fontSize: 20, fontWeight: 800, color }}>{score.toFixed(0)}</div>
         </div>
       </div>
-      <div style={{ textAlign: 'center', marginTop: 4 }}>
-        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+      <div style={{ textAlign: 'center', marginTop: 4, width: '100%' }}>
+        <div style={{
+          fontSize: '0.85rem',
+          fontWeight: 700,
+          color: 'var(--text-primary)',
+          letterSpacing: '0.01em',
+          lineHeight: 1.2,
+          wordBreak: 'break-word',
+        }}>
           {metric.dimension}
         </div>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-          {metric.rawValue}{metric.unit} · {metric.grade}
+        <div style={{
+          fontSize: '0.74rem',
+          color: 'var(--text-muted)',
+          marginTop: 4,
+          lineHeight: 1.25,
+          wordBreak: 'break-word',
+        }}>
+          {formatRawValue(metric.rawValue)} {metric.unit} · {metric.grade}
         </div>
       </div>
     </div>
   );
+}
+
+function formatRawValue(value) {
+  if (value == null || Number.isNaN(value)) return '0';
+  return Number(value).toFixed(1).replace(/\.0$/, '');
 }
 
 // Helper to describe an SVG arc

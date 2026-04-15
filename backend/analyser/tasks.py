@@ -7,6 +7,7 @@ from celery import shared_task
 from django.contrib.auth.models import User
 from .ml_models import model_manager
 from .integrations import dispatch_outbound_webhooks
+from .query_utils import latest_completed_run
 
 logger = logging.getLogger("analyser.tasks")
 
@@ -82,7 +83,7 @@ def generate_project_summary(self, project_id):
         project = Project.objects.get(id=project_id)
 
         # Get the latest analysis run
-        latest_run = project.analysis_runs.filter(status='completed').order_by('-completed_at').first()
+        latest_run = latest_completed_run(project)
 
         if not latest_run:
             report = (
@@ -192,7 +193,7 @@ def generate_project_embeddings(self, project_id):
         project = Project.objects.get(id=project_id)
         
         # Get latest analysis for richer context
-        latest_run = project.analysis_runs.filter(status='completed').order_by('-completed_at').first()
+        latest_run = latest_completed_run(project)
         
         # Build comprehensive text for embeddings
         text_parts = [

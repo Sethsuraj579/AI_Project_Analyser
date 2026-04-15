@@ -14,18 +14,40 @@ function WeightPieChart({ metrics, configs }) {
     grade: m.grade,
   }));
 
+  const renderLabel = ({ cx, cy, midAngle, outerRadius, name, value }) => {
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius + 14;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const anchor = x > cx ? 'start' : 'end';
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#d7e4ff"
+        textAnchor={anchor}
+        dominantBaseline="central"
+        fontSize="10.5"
+        fontWeight="600"
+      >
+        {`${name}: ${value}%`}
+      </text>
+    );
+  };
+
   return (
     <ResponsiveContainer width="100%" height={340}>
-      <PieChart>
+      <PieChart margin={{ top: 6, right: 60, bottom: 34, left: 72 }}>
         <Pie
           data={data}
-          cx="50%"
+          cx="48%"
           cy="44%"
-          innerRadius={52}
-          outerRadius={88}
+          innerRadius={50}
+          outerRadius={80}
           paddingAngle={3}
           dataKey="value"
-          label={({ name, value }) => `${name}: ${value}%`}
+          label={renderLabel}
           labelLine={{ stroke: '#6b6b80', strokeWidth: 1 }}
         >
           {data.map((entry, i) => (

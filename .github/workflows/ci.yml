@@ -6,19 +6,20 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-  DJANGO_DEBUG: "True"
-  DATABASE_URL: "sqlite:///ci-test.sqlite3"
-  REDIS_URL: "redis://localhost:6379/0"
-  SENTRY_DSN: ""
-
 jobs:
   # ──────────────────────────────────────────────────
   # Backend: lint + test
   # ──────────────────────────────────────────────────
   backend:
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-insecure-test-key-only
+      DJANGO_DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: project_analyser.test_settings
+      DATABASE_URL: sqlite:///test.sqlite3
+      REDIS_URL: redis://localhost:6379/0
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
 
     services:
       redis:
@@ -44,23 +45,25 @@ jobs:
       - name: Run migrations
         run: |
           cd backend
-          python manage.py migrate --noinput
+          python manage.py migrate --noinput --settings=project_analyser.test_settings
 
       - name: Run tests with coverage
         run: |
           cd backend
-          pytest --cov=analyser --cov-report=xml --cov-report=term -v
+          pytest --cov=analyser --cov-report=xml --cov-report=term -v --ds=project_analyser.test_settings
 
       - name: Security scan with Bandit
+        continue-on-error: true
         run: |
           cd backend
-          bandit -r analyser/ -f json -o bandit-report.json || true
+          bandit -r analyser/ -f json -o bandit-report.json
           cat bandit-report.json
 
       - name: Dependency check with Safety
+        continue-on-error: true
         run: |
           cd backend
-          safety check --file requirements.txt || true
+          safety check --file requirements.txt
 
   # ──────────────────────────────────────────────────
   # Frontend: lint + build

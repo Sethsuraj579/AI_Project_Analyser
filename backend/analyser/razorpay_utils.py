@@ -108,7 +108,16 @@ def verify_payment_signature(params):
                 razorpay_payment_id, razorpay_signature
     """
     client = _get_client()
-    client.utility.verify_payment_signature(params)
+
+    if params.get("razorpay_subscription_id"):
+        client.utility.verify_subscription_payment_signature(params)
+        return
+
+    if params.get("razorpay_order_id"):
+        client.utility.verify_payment_signature(params)
+        return
+
+    raise ValueError("Missing razorpay_order_id or razorpay_subscription_id for signature verification.")
 
 
 def verify_webhook_signature(payload, signature):

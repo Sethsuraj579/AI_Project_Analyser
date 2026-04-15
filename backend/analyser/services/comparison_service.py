@@ -1,6 +1,7 @@
 """Service helpers for project-to-project comparison logic."""
 
 from analyser.models import Project
+from analyser.query_utils import latest_completed_run, projects_with_latest_run
 
 
 def compare_user_projects(user, project_id, compare_with_id):
@@ -12,13 +13,17 @@ def compare_user_projects(user, project_id, compare_with_id):
     if str(project_id) == str(compare_with_id):
         raise Exception("Select a different project to compare.")
 
-    current_project = Project.objects.filter(id=project_id, user=user).first()
-    other_project = Project.objects.filter(id=compare_with_id, user=user).first()
+    current_project = projects_with_latest_run(
+        Project.objects.filter(id=project_id, user=user)
+    ).first()
+    other_project = projects_with_latest_run(
+        Project.objects.filter(id=compare_with_id, user=user)
+    ).first()
     if not current_project or not other_project:
         raise Exception("One or both projects were not found.")
 
-    current_run = current_project.analysis_runs.filter(status="completed").first()
-    other_run = other_project.analysis_runs.filter(status="completed").first()
+    current_run = latest_completed_run(current_project)
+    other_run = latest_completed_run(other_project)
 
     if not current_run or not other_run:
         missing = []

@@ -218,7 +218,7 @@ def collect_database_query_time(project, **_kw):
     # Also benchmark a real model query
     from .models import Project as ProjectModel
     start = time.perf_counter()
-    list(ProjectModel.objects.all()[:5])
+    ProjectModel.objects.only("id").order_by("id").first()
     model_query_ms = (time.perf_counter() - start) * 1000
 
     total = round(avg_ms + model_query_ms, 2)
