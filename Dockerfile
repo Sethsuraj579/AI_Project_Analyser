@@ -42,7 +42,7 @@ FROM nginx:alpine AS frontend
 
 RUN apk upgrade --no-cache
 
-COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
+COPY --from=frontend-build /app/frontend/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
