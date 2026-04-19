@@ -1,6 +1,7 @@
 venv/
 __pycache__/
 *.pyc
+db.sqlite3.bak_20260414_123353
 db.sqlite3
 test.sqlite3
 staticfiles/
@@ -9,3 +10,4 @@ staticfiles/
 htmlcov/
 .coverage
 bandit-report.json
+pytest.ini

@@ -1,4 +1,24 @@
 import React, { useState } from 'react';
+import { useMutation, gql } from '@apollo/client';
+
+const CREATE_CONTACT_MESSAGE = gql`
+  mutation CreateContactMessage(
+    $name: String!
+    $email: String!
+    $subject: String!
+    $message: String!
+  ) {
+    createContactMessage(
+      name: $name
+      email: $email
+      subject: $subject
+      message: $message
+    ) {
+      success
+      message
+    }
+  }
+`;
 
 export default function ContactSettings() {
   const [formData, setFormData] = useState({
@@ -8,6 +28,26 @@ export default function ContactSettings() {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  const [createContactMessage, { loading }] = useMutation(CREATE_CONTACT_MESSAGE, {
+    onCompleted: (data) => {
+      if (data?.createContactMessage?.success) {
+        setSubmitted(true);
+        setSubmitError('');
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setTimeout(() => setSubmitted(false), 3000);
+        return;
+      }
+
+      setSubmitted(false);
+      setSubmitError(data?.createContactMessage?.message || 'Failed to send message. Please try again.');
+    },
+    onError: (error) => {
+      setSubmitted(false);
+      setSubmitError(error.message || 'Failed to send message. Please try again.');
+    },
+  });
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -15,13 +55,9 @@ export default function ContactSettings() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log('Contact form submitted:', formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 3000);
+    setSubmitted(false);
+    setSubmitError('');
+    createContactMessage({ variables: { ...formData } });
   };
 
   return (
@@ -33,6 +69,12 @@ export default function ContactSettings() {
         {submitted && (
           <div className="settings-info-card settings-callout success">
             <p>Thank you for contacting us. We’ll get back to you within 24-48 hours.</p>
+          </div>
+        )}
+
+        {submitError && (
+          <div className="settings-info-card settings-callout error">
+            <p>{submitError}</p>
           </div>
         )}
 
@@ -92,8 +134,8 @@ export default function ContactSettings() {
           </div>
 
           <div className="settings-btn-group">
-            <button type="submit" className="settings-btn settings-btn-primary">
-              Send Message
+            <button type="submit" className="settings-btn settings-btn-primary" disabled={loading}>
+              {loading ? 'Sending...' : 'Send Message'}
             </button>
           </div>
         </form>
@@ -117,7 +159,7 @@ export default function ContactSettings() {
         <div className="settings-info-card">
           <h3>Live Chat</h3>
           <p>
-            Available Monday - Friday, 9 AM - 6 PM EST<br/>
+            Available Sunday - Friday, 9 AM - 6 PM EST<br/>
             <button className="settings-btn settings-btn-secondary settings-card-actions">
               Start Chat
             </button>
@@ -127,7 +169,13 @@ export default function ContactSettings() {
         <div className="settings-info-card">
           <h3>Social Media</h3>
           <p>
-            Follow us on Twitter, LinkedIn, and GitHub for updates and announcements.
+            Follow your profiles for updates and announcements:
+            <br />
+            <a href="https://github.com/Sethsuraj579" target="_blank" rel="noreferrer">GitHub</a>
+            <br />
+            <a href="https://www.linkedin.com/in/sethsuraj579" target="_blank" rel="noreferrer">LinkedIn</a>
+            <br />
+            <a href="https://x.com/sethsuraj579" target="_blank" rel="noreferrer">X (Twitter)</a>
           </p>
         </div>
       </div>

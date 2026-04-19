@@ -160,6 +160,7 @@ else:
     EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
     EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="AI Project Analyser <noreply@analyser.local>")
+CONTACT_RECEIVER_EMAIL = env("CONTACT_RECEIVER_EMAIL", default="sethsuraj202@outlook.com")
 
 # ──────────────────────────────────────────────────────────────
 # CORS — production-safe origins

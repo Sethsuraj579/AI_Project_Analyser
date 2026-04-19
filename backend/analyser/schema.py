@@ -1632,6 +1632,68 @@ class UpdatePreferences(graphene.Mutation):
             )
 
 
+class CreateContactMessage(graphene.Mutation):
+    """Create a contact message and notify support email."""
+
+    class Arguments:
+        name = graphene.String(required=True)
+        email = graphene.String(required=True)
+        subject = graphene.String(required=True)
+        message = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    contact_message = graphene.Field(ContactMessageType)
+
+    def mutate(self, info, name, email, subject, message):
+        user = _require_auth(info)
+
+        try:
+            cleaned_name = name.strip()
+            cleaned_email = email.strip().lower()
+            cleaned_message = message.strip()
+
+            contact_message = ContactMessage.objects.create(
+                user=user,
+                name=cleaned_name,
+                email=cleaned_email,
+                subject=subject,
+                message=cleaned_message,
+            )
+
+            subject_label = dict(ContactMessage.SUBJECT_CHOICES).get(subject, subject)
+            recipient_email = getattr(django_settings, "CONTACT_RECEIVER_EMAIL", "sethsuraj202@outlook.com")
+
+            send_mail(
+                subject=f"[Contact Form] {subject_label} - {cleaned_name}",
+                message=(
+                    "A new contact message was submitted from Settings.\n\n"
+                    f"Sender Name: {cleaned_name}\n"
+                    f"Sender Email: {cleaned_email}\n"
+                    f"User: {user.username} (ID: {user.id})\n"
+                    f"Subject: {subject_label}\n\n"
+                    "Message:\n"
+                    f"{cleaned_message}"
+                ),
+                from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                recipient_list=[recipient_email],
+                fail_silently=False,
+            )
+
+            return CreateContactMessage(
+                success=True,
+                message="Message sent successfully. We'll get back to you within 24-48 hours.",
+                contact_message=contact_message,
+            )
+        except Exception as e:
+            logger.error(f"Error creating contact message: {e}")
+            return CreateContactMessage(
+                success=False,
+                message="Could not send your message right now. Please try again.",
+                contact_message=None,
+            )
+
+
 class Enable2FA(graphene.Mutation):
     """Enable two-factor authentication for the user."""
     
@@ -1837,6 +1899,7 @@ class Mutation(graphene.ObjectType):
     change_password = ChangePassword.Field()
     delete_account = DeleteAccount.Field()
     update_preferences = UpdatePreferences.Field()
+    create_contact_message = CreateContactMessage.Field()
     enable_2fa = Enable2FA.Field()
     verify_2fa = Verify2FA.Field()
     disable_2fa = Disable2FA.Field()
