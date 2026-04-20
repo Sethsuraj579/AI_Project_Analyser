@@ -42,6 +42,29 @@ def razorpay_webhook(request):
 @require_http_methods(["GET"])
 def health_check(request):
     """
-    Simple health check endpoint.
+    Comprehensive health check endpoint.
+    Checks database and Redis connectivity.
     """
-    return JsonResponse({"status": "ok", "service": "AI Project Analyser"})
+    health = {"status": "ok", "service": "AI Project Analyser", "checks": {}}
+    
+    # Database check
+    try:
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        health["checks"]["database"] = "ok"
+    except Exception as e:
+        health["checks"]["database"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    # Redis/Cache check
+    try:
+        from django.core.cache import cache
+        cache.set("_health_check", "ok", timeout=1)
+        cache.get("_health_check")
+        health["checks"]["cache"] = "ok"
+    except Exception as e:
+        health["checks"]["cache"] = f"error: {str(e)}"
+        health["status"] = "degraded"
+    
+    return JsonResponse(health)

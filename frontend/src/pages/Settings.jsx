@@ -6,6 +6,7 @@ import ProfileSettings from '../components/settings/ProfileSettings';
 import SubscriptionSettings from '../components/settings/SubscriptionSettings';
 import AboutSettings from '../components/settings/AboutSettings';
 import ContactSettings from '../components/settings/ContactSettings';
+import FeedbackSettings from '../components/settings/FeedbackSettings';
 import TermsSettings from '../components/settings/TermsSettings';
 import PrivacySettings from '../components/settings/PrivacySettings';
 import HelpSettings from '../components/settings/HelpSettings';
@@ -83,6 +84,13 @@ function SettingsIcon({ name }) {
       </svg>
     );
   }
+  if (name === 'feedback') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 6h16v10H8l-4 4V6z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      </svg>
+    );
+  }
   return null;
 }
 
@@ -124,6 +132,13 @@ const TABS = [
     label: 'Contact', 
     icon: 'contact',
     description: 'Get in touch',
+    section: 'support',
+  },
+  {
+    id: 'feedback',
+    label: 'Feedback',
+    icon: 'feedback',
+    description: 'Share product experience',
     section: 'support',
   },
   { 
@@ -177,6 +192,8 @@ export default function Settings() {
         return <AboutSettings />;
       case 'contact':
         return <ContactSettings />;
+      case 'feedback':
+        return <FeedbackSettings />;
       case 'terms':
         return <TermsSettings />;
       case 'privacy':

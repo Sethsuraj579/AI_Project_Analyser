@@ -1,6 +1,7 @@
 import React, { useState, lazy, Suspense, useEffect, useCallback } from 'react';
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import BrandMark from './components/BrandMark';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy-loaded pages for code-splitting
 const ProjectList = lazy(() => import('./pages/ProjectList'));
@@ -146,18 +147,20 @@ function App() {
         </div>
       </header>
       <main className="main-content">
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<ProjectList />} />
-            <Route path="/project/:id" element={<ProjectDetail />} />
-            <Route path="/new" element={<NewProject />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/register" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<ProjectList />} />
+                <Route path="/project/:id" element={<ProjectDetail />} />
+                <Route path="/new" element={<NewProject />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/register" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
       </main>
     </div>
   );

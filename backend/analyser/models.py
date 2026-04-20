@@ -561,6 +561,50 @@ class ContactMessage(models.Model):
         return f"Message from {self.name} - {self.get_subject_display()} ({self.status})"
 
 
+class UserFeedback(models.Model):
+    """Structured product feedback submitted by authenticated users."""
+
+    ENVIRONMENT_CHOICES = [
+        ("phone", "Phone"),
+        ("tablet", "Tablet"),
+        ("pc", "PC"),
+    ]
+
+    RATING_CHOICES = [
+        (1, "1 - Very Poor"),
+        (2, "2 - Poor"),
+        (3, "3 - Average"),
+        (4, "4 - Good"),
+        (5, "5 - Excellent"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="feedback_entries")
+
+    faced_error = models.BooleanField(default=False)
+    feature_understanding_problem = models.BooleanField(default=False)
+    environment = models.CharField(max_length=10, choices=ENVIRONMENT_CHOICES)
+    software_quality_rating = models.IntegerField(choices=RATING_CHOICES)
+    software_performance_rating = models.IntegerField(choices=RATING_CHOICES)
+    settings_working = models.BooleanField(default=True)
+    pricing_working = models.BooleanField(default=True)
+    analysis_understandable = models.BooleanField(default=True)
+    dashboard_working = models.BooleanField(default=True)
+    login_google_working = models.BooleanField(default=True)
+    comments = models.TextField(blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Feedback by {self.user.username} ({self.get_environment_display()})"
+
+
 class FAQ(models.Model):
     """Frequently Asked Questions for help section."""
     

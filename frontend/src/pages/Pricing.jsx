@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, gql } from '@apollo/client';
 import PricingPlans from '../components/PricingPlans';
 import SubscriptionStatus from '../components/SubscriptionStatus';
 import './Pricing.css';
+
+const GET_CURRENT_PLAN = gql`
+  query GetCurrentPlan {
+    mySubscription {
+      plan {
+        name
+      }
+    }
+  }
+`;
 
 function PricingIcon({ name }) {
   if (name === 'speed') {
@@ -57,6 +68,8 @@ function PricingIcon({ name }) {
 export default function Pricing() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
+  const { data: subscriptionData } = useQuery(GET_CURRENT_PLAN);
+  const currentPlan = subscriptionData?.mySubscription?.plan?.name || 'free';
 
   const highlights = [
     { label: 'Active Teams', value: '2.4k+' },
@@ -177,7 +190,7 @@ export default function Pricing() {
         
         {/* Pricing Plans */}
         <section className="pricing-panel-wrap">
-          <PricingPlans onSelectPlan={handleSelectPlan} />
+          <PricingPlans onSelectPlan={handleSelectPlan} currentPlan={currentPlan} />
         </section>
 
         {/* Features Grid */}

@@ -29,7 +29,18 @@ Use this checklist before deploying the Django backend to production.
 - [ ] Run migrations: `python manage.py migrate`.
 - [ ] Seed subscription plans if needed: `python manage.py seed_plans`.
 - [ ] Verify the database user has only the permissions it needs.
-- [ ] Test a backup and restore procedure.
+- [ ] Configure automated backups (minimum 24-hour retention).
+- [ ] Test a backup and restore procedure on staging database.
+- [ ] Document RTO (Recovery Time Objective) and RPO (Recovery Point Objective).
+
+## Backups & Disaster Recovery
+- [ ] Enable automated daily backups via Neon dashboard (minimum 24h retention).
+- [ ] Store backups in at least 2 geographic regions.
+- [ ] Document restore procedure and test monthly on staging.
+- [ ] Set RTO target: 1 hour (restore from backup to production).
+- [ ] Set RPO target: 24 hours (maximum data loss acceptable).
+- [ ] Keep backups encrypted at rest and in transit.
+- [ ] Monitor backup job completion and receive alerts on failures.
 
 ## App Setup
 - [ ] Run Django system checks: `python manage.py check`.
@@ -52,6 +63,40 @@ Use this checklist before deploying the Django backend to production.
 - [ ] Confirm rate limiting is working for auth endpoints.
 - [ ] Verify JWT token expiry and logout behavior.
 - [ ] Confirm password reset or account recovery flow if enabled.
+
+## Scaling & Performance
+- [ ] Calculate expected concurrent users and scale Gunicorn workers accordingly.
+- [ ] Gunicorn formula: `workers = (2 x CPU_cores) + 1`.
+- [ ] Example: 4 CPU cores = 9 workers.
+- [ ] Configure Celery autoscaling for task processing.
+- [ ] Set up database connection pooling (Neon pooler recommended).
+- [ ] Enable Redis connection persistence with keepalive.
+- [ ] Configure CDN for static assets (optional but recommended).
+- [ ] Set up horizontal scaling on application platform.
+
+## Monitoring & Alerting
+- [ ] Health check endpoint returns `{"status": "ok", "checks": {...}}`.
+- [ ] Configure Sentry alerts for error-rate spikes (>10 errors/minute).
+- [ ] Configure Sentry alerts for payment failures.
+- [ ] Configure Sentry alerts for database connection errors.
+- [ ] Configure Sentry alerts for webhook failures.
+- [ ] Set up log aggregation and search (Sentry, Datadog, or similar).
+- [ ] Create alert for high API response time (>500ms p95).
+- [ ] Create alert for high database query time.
+- [ ] Create alert for Redis connection failures.
+- [ ] Create alert for Celery worker disconnections.
+- [ ] Create alert for backup job failures.
+
+## Incident Response
+- [ ] Document on-call rotation and escalation procedures.
+- [ ] Create runbook for database connection failures.
+- [ ] Create runbook for Redis unavailability.
+- [ ] Create runbook for Celery worker crashes.
+- [ ] Create runbook for payment webhook failures.
+- [ ] Create runbook for high error rates.
+- [ ] Set up status page (StatusPage.io or similar).
+- [ ] Document rollback procedure for failed deployments.
+- [ ] Keep incident log with root cause analysis for learning.
 
 ## Monitoring
 - [ ] Check Sentry event capture.

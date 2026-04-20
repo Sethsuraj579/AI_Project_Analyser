@@ -161,12 +161,22 @@ else:
     EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="AI Project Analyser <noreply@analyser.local>")
 CONTACT_RECEIVER_EMAIL = env("CONTACT_RECEIVER_EMAIL", default="sethsuraj202@outlook.com")
+FEEDBACK_RECEIVER_EMAIL = env("FEEDBACK_RECEIVER_EMAIL", default=CONTACT_RECEIVER_EMAIL)
 
 # ──────────────────────────────────────────────────────────────
 # CORS — production-safe origins
 # ──────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_CREDENTIALS = True
+
+# ──────────────────────────────────────────────────────────────
+# Rate Limiting — protect endpoints from abuse
+# ──────────────────────────────────────────────────────────────
+THROTTLE_RATES = {
+    "anon": "100/hour",        # Anonymous users: 100 requests/hour
+    "user": "1000/hour",       # Authenticated users: 1000 requests/hour  
+    "api_analysis": "50/hour", # Analysis operations: 50 requests/hour (heavy compute)
+}
 
 # ──────────────────────────────────────────────────────────────
 # GraphQL — Graphene + JWT middleware
@@ -227,7 +237,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 300  # 5 min hard limit per task
+CELERY_TASK_TIME_LIMIT = 900  # 15 min hard limit per task (analysis operations need more time)
 CELERY_WORKER_POOL = "solo"  # Use solo pool on Windows to avoid multiprocessing issues
 
 # ──────────────────────────────────────────────────────────────
@@ -303,6 +313,8 @@ SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
+# Keep CSRF cookie readable by frontend JavaScript for GraphQL/AJAX clients.
+# This is intentional for SPA integration and still protected by SameSite + HTTPS.
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_BROWSER_XSS_FILTER = True

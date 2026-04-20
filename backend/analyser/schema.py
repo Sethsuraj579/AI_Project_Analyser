@@ -16,7 +16,7 @@ from django.conf import settings as django_settings
 from django.utils import timezone
 from datetime import timedelta
 from .query_utils import latest_completed_run, projects_with_latest_run
-from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ, OutboundWebhook
+from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ, OutboundWebhook, UserFeedback
 from .engine import DIMENSION_CONFIG
 from .razorpay_utils import create_order, create_subscription, verify_payment_signature
 from .services.analysis_service import run_analysis_for_user_project
@@ -60,6 +60,26 @@ def _check_auth_rate_limit(info, action, limit=5, window_seconds=600):
 
     if attempts >= limit:
         raise Exception("Too many attempts. Please wait and try again later.")
+
+    if attempts == 0:
+        cache.set(cache_key, 1, timeout=window_seconds)
+        return
+
+    try:
+        cache.incr(cache_key)
+    except ValueError:
+        cache.set(cache_key, attempts + 1, timeout=window_seconds)
+
+
+def _check_user_rate_limit(info, action, limit=100, window_seconds=3600):
+    """Rate limit authenticated mutation actions per-user and per-IP."""
+    user = _require_auth(info)
+    ip_address = _client_ip(info)
+    cache_key = f"user-rate:{action}:{user.id}:{ip_address}"
+    attempts = cache.get(cache_key, 0)
+
+    if attempts >= limit:
+        raise Exception("Rate limit exceeded. Please wait and try again later.")
 
     if attempts == 0:
         cache.set(cache_key, 1, timeout=window_seconds)
@@ -222,6 +242,13 @@ class ContactMessageType(DjangoObjectType):
     """Contact form submissions."""
     class Meta:
         model = ContactMessage
+        fields = "__all__"
+
+
+class UserFeedbackType(DjangoObjectType):
+    """Structured user feedback submissions."""
+    class Meta:
+        model = UserFeedback
         fields = "__all__"
 
 
@@ -442,6 +469,7 @@ class CreateProject(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, name, description="", repo_url="", frontend_url="", backend_url=""):
+        _check_user_rate_limit(info, "create-project", limit=50, window_seconds=3600)
         user = _require_auth(info)
         
         # Check subscription
@@ -492,6 +520,7 @@ class UpdateProject(graphene.Mutation):
     success = graphene.Boolean()
 
     def mutate(self, info, id, **kwargs):
+        _check_user_rate_limit(info, "update-project", limit=200, window_seconds=3600)
         user = _require_auth(info)
         try:
             project = Project.objects.get(id=id, user=user)
@@ -511,6 +540,7 @@ class DeleteProject(graphene.Mutation):
     success = graphene.Boolean()
 
     def mutate(self, info, id):
+        _check_user_rate_limit(info, "delete-project", limit=50, window_seconds=3600)
         user = _require_auth(info)
         Project.objects.filter(id=id, user=user).delete()
         return DeleteProject(success=True)
@@ -530,6 +560,7 @@ class RunAnalysis(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, project_id):
+        _check_user_rate_limit(info, "run-analysis", limit=50, window_seconds=3600)
         user = _require_auth(info)
         result = run_analysis_for_user_project(user, project_id)
         return RunAnalysis(
@@ -555,6 +586,7 @@ class CreateOutboundWebhook(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, name, url, secret="", event_types=None, is_active=True):
+        _check_user_rate_limit(info, "create-webhook", limit=30, window_seconds=3600)
         user = _require_auth(info)
         result = create_webhook_for_user(user, name, url, secret, event_types, is_active)
         return CreateOutboundWebhook(webhook=result["webhook"], success=result["success"], message=result["message"])
@@ -576,6 +608,7 @@ class UpdateOutboundWebhook(graphene.Mutation):
     message = graphene.String()
 
     def mutate(self, info, webhook_id, name=None, url=None, secret=None, event_types=None, is_active=None):
+        _check_user_rate_limit(info, "update-webhook", limit=120, window_seconds=3600)
         user = _require_auth(info)
         result = update_webhook_for_user(user, webhook_id, name, url, secret, event_types, is_active)
         return UpdateOutboundWebhook(webhook=result["webhook"], success=result["success"], message=result["message"])
@@ -1694,6 +1727,113 @@ class CreateContactMessage(graphene.Mutation):
             )
 
 
+class CreateUserFeedback(graphene.Mutation):
+    """Store user feedback and send a notification email to support inbox."""
+
+    class Arguments:
+        faced_error = graphene.Boolean(required=True)
+        feature_understanding_problem = graphene.Boolean(required=True)
+        environment = graphene.String(required=True)
+        software_quality_rating = graphene.Int(required=True)
+        software_performance_rating = graphene.Int(required=True)
+        settings_working = graphene.Boolean(required=True)
+        pricing_working = graphene.Boolean(required=True)
+        analysis_understandable = graphene.Boolean(required=True)
+        dashboard_working = graphene.Boolean(required=True)
+        login_google_working = graphene.Boolean(required=True)
+        comments = graphene.String()
+
+    success = graphene.Boolean()
+    message = graphene.String()
+    feedback = graphene.Field(UserFeedbackType)
+
+    def mutate(
+        self,
+        info,
+        faced_error,
+        feature_understanding_problem,
+        environment,
+        software_quality_rating,
+        software_performance_rating,
+        settings_working,
+        pricing_working,
+        analysis_understandable,
+        dashboard_working,
+        login_google_working,
+        comments="",
+    ):
+        user = _require_auth(info)
+
+        valid_environments = {choice[0] for choice in UserFeedback.ENVIRONMENT_CHOICES}
+        if environment not in valid_environments:
+            return CreateUserFeedback(success=False, message="Invalid environment selected.", feedback=None)
+
+        if software_quality_rating < 1 or software_quality_rating > 5:
+            return CreateUserFeedback(success=False, message="Software quality rating must be between 1 and 5.", feedback=None)
+
+        if software_performance_rating < 1 or software_performance_rating > 5:
+            return CreateUserFeedback(success=False, message="Software performance rating must be between 1 and 5.", feedback=None)
+
+        try:
+            feedback = UserFeedback.objects.create(
+                user=user,
+                faced_error=faced_error,
+                feature_understanding_problem=feature_understanding_problem,
+                environment=environment,
+                software_quality_rating=software_quality_rating,
+                software_performance_rating=software_performance_rating,
+                settings_working=settings_working,
+                pricing_working=pricing_working,
+                analysis_understandable=analysis_understandable,
+                dashboard_working=dashboard_working,
+                login_google_working=login_google_working,
+                comments=(comments or "").strip(),
+            )
+
+            recipient_email = getattr(
+                django_settings,
+                "FEEDBACK_RECEIVER_EMAIL",
+                getattr(django_settings, "CONTACT_RECEIVER_EMAIL", "sethsuraj202@outlook.com"),
+            )
+
+            send_mail(
+                subject=f"[User Feedback] {user.username} ({feedback.get_environment_display()})",
+                message=(
+                    "A new user feedback form was submitted.\n\n"
+                    f"User: {user.username} (ID: {user.id})\n"
+                    f"Email: {user.email}\n"
+                    f"Environment: {feedback.get_environment_display()}\n\n"
+                    f"1. Faced any error: {'Yes' if faced_error else 'No'}\n"
+                    f"2. Problem understanding feature: {'Yes' if feature_understanding_problem else 'No'}\n"
+                    f"3. Software quality (1-5): {software_quality_rating}\n"
+                    f"4. Software performance (1-5): {software_performance_rating}\n"
+                    f"5. Settings running well: {'Yes' if settings_working else 'No'}\n"
+                    f"6. Pricing working well: {'Yes' if pricing_working else 'No'}\n"
+                    f"7. Analysis understandable: {'Yes' if analysis_understandable else 'No'}\n"
+                    f"8. Dashboard working well: {'Yes' if dashboard_working else 'No'}\n"
+                    f"9. Login and Google Login working well: {'Yes' if login_google_working else 'No'}\n\n"
+                    "Additional comments:\n"
+                    f"{feedback.comments or 'N/A'}"
+                ),
+                from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                recipient_list=[recipient_email],
+                fail_silently=False,
+            )
+
+            return CreateUserFeedback(
+                success=True,
+                message="Feedback submitted successfully. Thank you for helping us improve!",
+                feedback=feedback,
+            )
+        except Exception as e:
+            logger.error(f"Error creating user feedback: {e}")
+            return CreateUserFeedback(
+                success=False,
+                message="Could not submit your feedback right now. Please try again.",
+                feedback=None,
+            )
+
+
 class Enable2FA(graphene.Mutation):
     """Enable two-factor authentication for the user."""
     
@@ -1900,6 +2040,7 @@ class Mutation(graphene.ObjectType):
     delete_account = DeleteAccount.Field()
     update_preferences = UpdatePreferences.Field()
     create_contact_message = CreateContactMessage.Field()
+    create_user_feedback = CreateUserFeedback.Field()
     enable_2fa = Enable2FA.Field()
     verify_2fa = Verify2FA.Field()
     disable_2fa = Disable2FA.Field()
