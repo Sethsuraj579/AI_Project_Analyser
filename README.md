@@ -1,183 +1,144 @@
 # AI Project Analyser
 
-A full-stack **AI-powered project analysis** tool that generates **pictorial reports with interactive graphs** across 7 key dimensions. Built with **Django + GraphQL** backend and **React + Recharts** frontend.
+AI Project Analyser is a full-stack web application for analyzing software projects and presenting the results in a visual dashboard. It combines a Django backend with a React frontend to score projects, show charts and reports, manage pricing plans, and handle authentication and payments.
 
----
+## Project Details
 
-## Features
+The application is designed to help users evaluate a project across several dimensions such as frontend, backend, database, structure, API, integration, and security. It includes:
 
-### 7 Analysis Dimensions (with real-time data collection)
+- Visual score reports with gauges, charts, heatmaps, and trends
+- Project comparison and summary views
+- Authentication flows for login, registration, Google sign-in, and OTP
+- Pricing and subscription pages with Razorpay payment support
+- Responsive UI behavior for mobile, tablet, laptop, and desktop screens
 
-| # | Dimension | Metric | Unit | What it measures |
-|---|-----------|--------|------|-----------------|
-| 1 | **Frontend** | `Frontend_load_time` | ms | Page load performance |
-| 2 | **Backend** | `Backend_proc_time` | ms | Server processing speed |
-| 3 | **Database** | `Database_query_time` | ms | Database query latency |
-| 4 | **Structure** | `Structure_modularity` | score | Code modularity & architecture |
-| 5 | **API** | `API_latency` | ms | API endpoint response time |
-| 6 | **Integration** | `Integration_success` | % | Third-party integration health |
-| 7 | **Security** | `Security_audit` | score | Security vulnerability assessment |
+## Dimensions Used
 
-### Interactive Charts & Graphs
-- **Radar Chart** — 7-dimension overall health overview
-- **Bar Chart** — Score comparison with threshold reference lines
-- **Pie Chart** — Weight distribution showing each dimension's impact
-- **Gauge Meters** — Individual circular gauges per dimension
-- **Heatmap** — Color-coded score visualization
-- **Trend Lines** — Historical score trends over time (toggleable per dimension)
-- **Detailed Report Cards** — Per-dimension breakdown with raw values, thresholds & grades
+| Dimension | What It Measures |
+| --- | --- |
+| Frontend | UI performance, responsiveness, and user-facing load behavior |
+| Backend | Server-side processing speed, stability, and request handling |
+| Database | Query latency, efficiency, and data access performance |
+| Structure | Code organization, modularity, and maintainability |
+| API | Endpoint latency, reliability, and response quality |
+| Integration | Success and health of external service connections |
+| Security | Vulnerability checks, hardening, and overall security posture |
 
-### Scoring System
-- Each metric is scored **0–100** based on configurable thresholds
-- Weighted scoring (**15–18%** per dimension) produces an **overall project score**
-- Letter grades: **A+ / A / B / C / D / E / F**
-- Real-time URL probing (if frontend/backend URLs are provided)
+## Stack
 
----
+- Backend: Django 4.2, GraphQL, Celery, Redis, PostgreSQL
+- Frontend: React, Vite, Apollo Client, Recharts
+- Styling: Custom responsive CSS
 
-## Tech Stack
+## Repository Structure
 
-| Layer | Technology |
-|-------|-----------|
-| **Backend** | Django 4.2, Python 3.10+ (venv) |
-| **API** | GraphQL (graphene-django) |
-| **Frontend** | React 18, Vite 5, React Router 6 |
-| **Build Tool** | Vite (replaces CRA) |
-| **Charts** | Recharts |
-| **GraphQL Client** | Apollo Client 3 |
-| **Styling** | Custom CSS (dark theme) |
-
----
-
-## Quick Start
-
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- pip & npm
-
-### 1. Backend Setup (Virtual Environment)
-
-```bash
-cd backend
-python -m venv venv
-
-# Activate venv:
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-# source venv/bin/activate
-
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py seed_demo    # Creates demo project with sample data
-python manage.py runserver    # Starts at http://localhost:8000
-```
-
-The GraphQL playground is available at **http://localhost:8000/graphql/**
-
-### 2. Frontend Setup (Vite)
-
-```bash
-cd frontend
-npm install
-npm run dev    # Starts Vite dev server at http://localhost:3000
-```
-
-### 3. Use the App
-
-1. Open **http://localhost:3000**
-2. You'll see the demo project on the dashboard
-3. Click **"Run Analysis"** to collect real-time metrics
-4. Click **"View Report"** for the full pictorial report with all graphs
-5. Create new projects with actual frontend/backend URLs for real probing
-
----
-
-## GraphQL API
-
-### Example Queries
-
-```graphql
-# Get all projects with latest analysis
-query {
-  allProjects {
-    id
-    name
-    latestRun {
-      overallScore
-      overallGrade
-      metrics {
-        dimension
-        metricName
-        rawValue
-        normalisedScore
-        grade
-        weight
-      }
-    }
-  }
-}
-
-# Run a new analysis
-mutation {
-  runAnalysis(projectId: "your-project-uuid") {
-    analysisRun {
-      overallScore
-      overallGrade
-      metrics {
-        dimension
-        normalisedScore
-        grade
-      }
-    }
-  }
-}
-```
-
----
-
-## Project Structure
-
-```
+```text
 AI_project_analyser/
 ├── backend/
 │   ├── manage.py
 │   ├── requirements.txt
-│   ├── project_analyser/        # Django project config
-│   │   ├── settings.py
-│   │   ├── urls.py
-│   │   └── schema.py            # Root GraphQL schema
-│   └── analyser/                # Main app
-│       ├── models.py            # Project, AnalysisRun, MetricSnapshot, HistoricalTrend
-│       ├── engine.py            # AI analysis engine (collectors, scoring, weights)
-│       ├── schema.py            # GraphQL types, queries, mutations
-│       ├── admin.py             # Django admin registration
-│       └── management/commands/
-│           └── seed_demo.py     # Demo data seeder
-│
-└── frontend/
-    ├── package.json
-    ├── public/index.html
-    └── src/
-        ├── App.js               # Routes & navigation
-        ├── index.js             # Apollo + Router setup
-        ├── index.css            # Global dark theme styles
-        ├── graphql/
-        │   ├── client.js        # Apollo Client config
-        │   └── queries.js       # All GraphQL queries & mutations
-        ├── pages/
-        │   ├── ProjectList.js   # Dashboard with project cards
-        │   ├── ProjectDetail.js # Full report page with all charts
-        │   └── NewProject.js    # Create project form
-        └── components/
-            ├── OverallScoreGauge.js   # Circular score gauge
-            ├── MiniRadarChart.js      # Small radar for cards
-            ├── DimensionRadarChart.js # Full radar chart
-            ├── DimensionBarChart.js   # Horizontal bar chart
-            ├── WeightPieChart.js      # Weight distribution pie
-            ├── MetricGaugeGrid.js     # Individual gauge meters
-            ├── TrendLineChart.js      # Historical trend lines
-            ├── MetricDetailCard.js    # Dimension detail card
-            └── ScoreHeatmap.js        # Score heatmap grid
+│   ├── analyser/
+│   │   ├── models.py
+│   │   ├── engine.py
+│   │   ├── schema.py
+│   │   ├── payment_views.py
+│   │   ├── report_views.py
+│   │   ├── tasks.py
+│   │   ├── webhook_handlers.py
+│   │   ├── query_utils.py
+│   │   ├── razorpay_utils.py
+│   │   ├── chatbot.py
+│   │   ├── integrations.py
+│   │   ├── ml_models.py
+│   │   ├── management/
+│   │   ├── migrations/
+│   │   ├── services/
+│   │   └── tests/
+│   └── project_analyser/
+│       ├── settings.py
+│       ├── urls.py
+│       ├── schema.py
+│       ├── celery.py
+│       ├── asgi.py
+│       └── wsgi.py
+├── frontend/
+│   ├── index.html
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.jsx
+│       ├── main.jsx
+│       ├── index.css
+│       ├── components/
+│       ├── graphql/
+│       └── pages/
+├── docker-compose.yml
+├── Dockerfile
+├── nginx.conf
+└── README.md
 ```
+
+## Main Frontend Areas
+
+- `src/pages/` contains the page-level screens such as landing, pricing, login, register, project list, project detail, settings, and comparison.
+- `src/components/` contains shared UI pieces such as charts, pricing cards, payment forms, report widgets, and reusable layout components.
+- `src/graphql/` contains the Apollo client setup and GraphQL queries.
+
+## Main Backend Areas
+
+- `backend/analyser/` contains the app logic for analysis, reporting, payments, integrations, tasks, and API/schema code.
+- `backend/project_analyser/` contains the Django project settings, routing, Celery bootstrap, ASGI/WSGI entry points, and test settings.
+
+## Local Development
+
+### Backend
+
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_demo
+python manage.py runserver
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Docker
+
+```bash
+docker compose up --build
+```
+
+To build the images separately:
+
+```bash
+docker build -t ai-project-analyser .
+```
+
+The compose setup starts the backend, Celery worker, Redis, and frontend services.
+
+| Service | Purpose | Port |
+| --- | --- | --- |
+| backend | Django API, GraphQL, and business logic | 8000 |
+| frontend | React app served through Nginx | 3000 |
+| celery | Background job worker for tasks | N/A |
+| redis | Cache and queue broker for Celery | 6379 |
+
+## Production Checks
+
+- Frontend build: `npm run build`
+- Backend tests: `pytest`
+- Django deploy checks: `python manage.py check --deploy`
+
+## Notes
+
+- Keep secrets out of version control.
+- Use environment files only for local development.
+- The UI is intended to remain responsive across mobile, tablet, laptop, and desktop devices.

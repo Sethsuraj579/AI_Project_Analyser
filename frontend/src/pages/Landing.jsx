@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import BrandMark from '../components/BrandMark';
 import './Landing.css';
 
+const METRIC_TARGETS = {
+  signals: 10,
+  reports: 100,
+  workflow: 4,
+  setup: 5,
+};
+
 function Landing() {
   const metricsRef = useRef(null);
   const [startCount, setStartCount] = useState(false);
@@ -12,13 +19,6 @@ function Landing() {
     workflow: 0,
     setup: 0,
   });
-
-  const metricTargets = {
-    signals: 10,
-    reports: 100,
-    workflow: 4,
-    setup: 5,
-  };
 
   useEffect(() => {
     const node = metricsRef.current;
@@ -51,10 +51,10 @@ function Landing() {
       const eased = 1 - Math.pow(1 - progress, 3);
 
       setCounts({
-        signals: Math.round(metricTargets.signals * eased),
-        reports: Math.round(metricTargets.reports * eased),
-        workflow: Math.round(metricTargets.workflow * eased),
-        setup: Math.round(metricTargets.setup * eased),
+        signals: Math.round(METRIC_TARGETS.signals * eased),
+        reports: Math.round(METRIC_TARGETS.reports * eased),
+        workflow: Math.round(METRIC_TARGETS.workflow * eased),
+        setup: Math.round(METRIC_TARGETS.setup * eased),
       });
 
       if (progress < 1) {
@@ -97,7 +97,7 @@ function Landing() {
             Track quality trends, compare projects, generate visual reports, and turn static metrics into clear actions.
           </p>
           <div className="landing-cta-row">
-            <Link className="landing-btn landing-btn-primary" to="/register">Get Started Free</Link>
+            <Link className="landing-btn landing-btn-primary" to="/pricing">Get Started Free</Link>
             <Link className="landing-btn landing-btn-ghost" to="/login">Sign In</Link>
           </div>
         </section>

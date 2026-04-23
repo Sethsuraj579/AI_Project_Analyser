@@ -60,8 +60,6 @@ function TrendLineChart({ trends }) {
     });
   }, [trends]);
 
-  const latestPoint = chartData[chartData.length - 1] || null;
-
   const latestRows = useMemo(() => {
     if (!chartData.length) return [];
     return ALL_DIMENSIONS

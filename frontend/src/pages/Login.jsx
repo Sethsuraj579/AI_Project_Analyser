@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { LOGIN_USER, GOOGLE_AUTH, VERIFY_GOOGLE_OTP } from '../graphql/queries';
 import GoogleSignInButton from '../components/GoogleSignInButton';
@@ -101,20 +101,6 @@ function Login({ onLogin, onSwitchToRegister }) {
       }
     } catch (err) {
       setError(err.message || 'Verification failed.');
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError('');
-    setInfo('');
-    try {
-      const res = await googleAuth({
-        variables: { googleToken: 'resend' }, // This won't work - need to resend from backend
-      });
-      // Actually, we should use SendOTP mutation instead
-      setInfo('Resend functionality coming soon. Try again with Google.');
-    } catch (err) {
-      setError('Failed to resend code.');
     }
   };
 

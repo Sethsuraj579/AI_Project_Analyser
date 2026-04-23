@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SubscriptionStatus from '../SubscriptionStatus';
 import PricingPlans from '../PricingPlans';
@@ -6,7 +5,7 @@ import PricingPlans from '../PricingPlans';
 export default function SubscriptionSettings() {
   const navigate = useNavigate();
 
-  const handleSelectPlan = (planName) => {
+  const handleSelectPlan = (_planName) => {
     // Handled by PricingPlans component
   };
 

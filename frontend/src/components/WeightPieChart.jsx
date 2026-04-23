@@ -1,4 +1,3 @@
-import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const COLORS = ['#00d4ff', '#7b2ff7', '#00e676', '#ffd600', '#ff9100', '#e040fb', '#ff1744'];
@@ -6,8 +5,8 @@ const COLORS = ['#00d4ff', '#7b2ff7', '#00e676', '#ffd600', '#ff9100', '#e040fb'
 /**
  * Pie chart showing the weight distribution across dimensions.
  */
-function WeightPieChart({ metrics, configs }) {
-  const data = metrics.map((m, i) => ({
+function WeightPieChart({ metrics }) {
+  const data = metrics.map((m) => ({
     name: capitalize(m.dimension),
     value: parseFloat((m.weight * 100).toFixed(1)),
     score: m.normalisedScore,

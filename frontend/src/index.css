@@ -72,6 +72,24 @@ h1, h2, h3 {
   width: 100%;
 }
 
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 20px 18px;
+  }
+
+  .app-brand {
+    min-width: 220px;
+  }
+
+  .app-brand-copy h1 {
+    font-size: 1.45rem;
+  }
+
+  .app-brand-copy p {
+    font-size: 0.76rem;
+  }
+}
+
 /* ── Header ────────────────────────────── */
 .app-header {
   background: linear-gradient(180deg, rgba(13, 19, 38, 0.98), rgba(10, 15, 32, 0.97));
@@ -446,6 +464,16 @@ h1, h2, h3 {
 
   .app-brand-copy p {
     font-size: 0.76rem;
+  }
+
+  .app-brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .app-brand-logo svg {
+    width: 20px;
+    height: 20px;
   }
 
   .burger-btn {

@@ -1,6 +1,5 @@
 import { ApolloClient, InMemoryCache, HttpLink, ApolloLink, Observable, from as apolloFrom } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
-import { gql } from '@apollo/client';
 
 const httpLink = new HttpLink({
   uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/',
@@ -24,15 +23,6 @@ const authLink = new ApolloLink((operation, forward) => {
   }
   return forward(operation);
 });
-
-const REFRESH_TOKEN_MUTATION = gql`
-  mutation RefreshToken($token: String!) {
-    refreshToken(token: $token) {
-      token
-      payload
-    }
-  }
-`;
 
 let isRefreshing = false;
 let pendingRequests = [];

@@ -1,23 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function GoogleSignInButton({ onSuccess, loading, text = 'Sign in with Google' }) {
   const buttonRef = useRef(null);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-  const [noClientId, setNoClientId] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(Boolean(window.google?.accounts?.id));
+  const noClientId = !GOOGLE_CLIENT_ID;
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) {
-      setNoClientId(true);
+    if (noClientId) {
       return;
     }
 
     // Load Google Identity Services script
     if (document.getElementById('google-gsi-script')) {
-      if (window.google?.accounts?.id) {
-        setSdkLoaded(true);
-      }
       return;
     }
 
@@ -28,7 +24,7 @@ function GoogleSignInButton({ onSuccess, loading, text = 'Sign in with Google' }
     script.defer = true;
     script.onload = () => setSdkLoaded(true);
     document.head.appendChild(script);
-  }, []);
+  }, [noClientId]);
 
   useEffect(() => {
     if (!sdkLoaded || !window.google?.accounts?.id || !buttonRef.current) return;

@@ -1,12 +1,10 @@
-import React from 'react';
-
 const DIMENSION_ORDER = ['frontend', 'backend', 'database', 'structure', 'api', 'integration', 'security'];
 
 /**
  * Heatmap visual showing scores across dimensions.
  * Color intensity corresponds to score value (green = high, red = low).
  */
-function ScoreHeatmap({ metrics, runs }) {
+function ScoreHeatmap({ metrics }) {
   const metricByDimension = new Map(
     metrics.map((metric) => [normalizeDimension(metric?.dimension), metric])
   );

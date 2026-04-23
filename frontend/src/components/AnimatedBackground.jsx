@@ -3,32 +3,34 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
+function generateStarsData() {
+  const positions = new Float32Array(5000 * 3);
+  const colors = new Float32Array(5000 * 3);
+
+  for (let i = 0; i < 5000; i++) {
+    const i3 = i * 3;
+
+    positions[i3] = (Math.random() - 0.5) * 10;
+    positions[i3 + 1] = (Math.random() - 0.5) * 10;
+    positions[i3 + 2] = (Math.random() - 0.5) * 10;
+
+    const color = new THREE.Color();
+    color.setHSL(0.6 + Math.random() * 0.2, 0.8, 0.6);
+    colors[i3] = color.r;
+    colors[i3 + 1] = color.g;
+    colors[i3 + 2] = color.b;
+  }
+
+  return [positions, colors];
+}
+
+const STAR_DATA = generateStarsData();
+
 function Stars(props) {
   const ref = useRef();
   
   // Generate random particle positions
-  const [positions, colors] = useMemo(() => {
-    const positions = new Float32Array(5000 * 3);
-    const colors = new Float32Array(5000 * 3);
-    
-    for (let i = 0; i < 5000; i++) {
-      const i3 = i * 3;
-      
-      // Random positions in a sphere
-      positions[i3] = (Math.random() - 0.5) * 10;
-      positions[i3 + 1] = (Math.random() - 0.5) * 10;
-      positions[i3 + 2] = (Math.random() - 0.5) * 10;
-      
-      // Gradient colors (purple to blue)
-      const color = new THREE.Color();
-      color.setHSL(0.6 + Math.random() * 0.2, 0.8, 0.6);
-      colors[i3] = color.r;
-      colors[i3 + 1] = color.g;
-      colors[i3 + 2] = color.b;
-    }
-    
-    return [positions, colors];
-  }, []);
+  const [positions, colors] = useMemo(() => STAR_DATA, []);
 
   // Animate rotation
   useFrame((state, delta) => {
@@ -40,7 +42,7 @@ function Stars(props) {
 
   return (
     <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={positions} stride={3} frustumCulled={false} {...props}>
+      <Points ref={ref} positions={positions} colors={colors} stride={3} frustumCulled={false} {...props}>
         <PointMaterial
           transparent
           vertexColors

@@ -216,13 +216,15 @@
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 680px;
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .detail-table th,
 .detail-table td {
   text-align: left;
   padding: 10px 12px;
+  overflow-wrap: anywhere;
 }
 
 .detail-table th {
@@ -326,6 +328,17 @@
 
   .detail-spacious-panel .detail-content-frame {
     min-height: 280px;
+  }
+
+  .detail-table th,
+  .detail-table td {
+    padding: 8px 9px;
+    font-size: 0.8rem;
+  }
+
+  .detail-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .detail-head-meta {

@@ -4,7 +4,7 @@ import ComparisonChart from '../components/ComparisonChart';
 import './ComparisonPage.css';
 
 const ComparisonPage = () => {
-  const [selectedProjects, setSelectedProjects] = useState([
+  const [selectedProjects] = useState([
     {
       id: 1,
       name: 'Project Alpha',
@@ -42,8 +42,6 @@ const ComparisonPage = () => {
       lines_of_code: 9200,
     },
   ]);
-
-  const [chartType, setChartType] = useState('bar');
 
   const tabsConfig = [
     {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 
 const UPDATE_PROFILE = gql`
@@ -74,7 +74,7 @@ export default function ProfileSettings() {
   });
   const [message, setMessage] = useState(null);
 
-  const { data, loading: queryLoading } = useQuery(GET_USER_INFO, {
+  const { loading: queryLoading } = useQuery(GET_USER_INFO, {
     onCompleted: (result) => {
       if (result.userInfo) {
         const { userInfo } = result;
@@ -118,15 +118,6 @@ export default function ProfileSettings() {
   });
 
   const [updatePreferences, { loading: preferencesLoading }] = useMutation(UPDATE_PREFERENCES);
-
-  useEffect(() => {
-    if (data?.userInfo?.preferences) {
-      setPreferences({
-        emailNotifications: data.userInfo.preferences.emailNotifications ?? true,
-        projectUpdates: data.userInfo.preferences.projectUpdates ?? true
-      });
-    }
-  }, [data]);
 
   const handleInputChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value });

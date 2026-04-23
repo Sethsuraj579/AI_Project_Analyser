@@ -46,8 +46,6 @@ function GaugeMeter({ metric }) {
   const size = 120;
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
-  const circumference = Math.PI * radius; // half circle
-  const progress = (score / 100) * circumference;
 
   return (
     <div style={{

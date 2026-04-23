@@ -1,5 +1,5 @@
-import React, { useState, lazy, Suspense, useEffect, useCallback } from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useState, lazy, Suspense, useEffect, useCallback } from 'react';
+import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import BrandMark from './components/BrandMark';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -41,7 +41,6 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('jwt_token'));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogin = (newToken) => {
     setToken(newToken);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_ALL_PROJECTS, GET_PROJECT_COMPARISON } from '../graphql/queries';
 import './ProjectComparison.css';
@@ -24,15 +24,11 @@ function ProjectComparison({ projectId }) {
     return projects.filter((p) => p.id !== projectId);
   }, [listData, projectId]);
 
-  useEffect(() => {
-    if (!compareWithId && options.length > 0) {
-      setCompareWithId(options[0].id);
-    }
-  }, [compareWithId, options]);
+  const activeCompareWithId = compareWithId || options[0]?.id || '';
 
   const { data, loading, error, refetch } = useQuery(GET_PROJECT_COMPARISON, {
-    variables: { projectId, compareWithId },
-    skip: !projectId || !compareWithId,
+    variables: { projectId, compareWithId: activeCompareWithId },
+    skip: !projectId || !activeCompareWithId,
   });
 
   const comparison = data?.projectComparison;
@@ -61,7 +57,7 @@ function ProjectComparison({ projectId }) {
         </div>
         <div className="comparison-controls">
           <select
-            value={compareWithId}
+            value={activeCompareWithId}
             onChange={(e) => setCompareWithId(e.target.value)}
             className="comparison-select"
           >
@@ -71,7 +67,7 @@ function ProjectComparison({ projectId }) {
               </option>
             ))}
           </select>
-          <button className="btn btn-secondary" onClick={() => refetch()} disabled={loading || !compareWithId}>
+          <button className="btn btn-secondary" onClick={() => refetch()} disabled={loading || !activeCompareWithId}>
             Refresh
           </button>
         </div>

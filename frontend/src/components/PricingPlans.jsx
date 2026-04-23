@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { gsap } from 'gsap';
+import { createPortal } from 'react-dom';
 import PaymentForm from './PaymentForm';
 import './PricingPlans.css';
 
@@ -99,23 +100,27 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
   const [paymentModal, setPaymentModal] = useState({ open: false, plan: null });
   const cardsRef = useRef([]);
   const headerRef = useRef(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
   const planHighlights = [
     { label: 'Start free', value: 'No credit card required' },
     { label: 'Upgrade anytime', value: 'Scale when you need more' },
     { label: 'Secure billing', value: 'Razorpay protected payments' },
   ];
 
-  // Debug logging
-  useEffect(() => {
-    console.log('PricingPlans Query State:', { loading, error, data });
-  }, [loading, error, data]);
-
   const handleSelectPlan = async (plan) => {
     const normalizedName = (plan?.name || '').toLowerCase();
+    const hasAuthToken = Boolean(localStorage.getItem('jwt_token'));
 
     // Free plan doesn't need payment
     if (normalizedName === 'free' || plan.pricePerMonth === '0' || plan.pricePerMonth === 0 || plan.pricePerMonth === '0.00') {
+      if (!hasAuthToken) {
+        setSelectedPlan(normalizedName);
+        if (onSelectPlan) {
+          onSelectPlan(normalizedName);
+        }
+        alert('Free plan selected. You can create an account later to save your subscription.');
+        return;
+      }
+
       try {
         const result = await upgradePlan({
           variables: { planName: normalizedName },
@@ -135,12 +140,17 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
         alert('Failed to upgrade plan');
       }
     } else {
+      if (!hasAuthToken) {
+        alert('Please sign in to start a paid plan. You can still review the pricing details without logging in.');
+        return;
+      }
+
       // Show payment form for paid plans
       setPaymentModal({ open: true, plan });
     }
   };
 
-  const handlePaymentSuccess = (payment) => {
+  const handlePaymentSuccess = (_payment) => {
     const normalizedName = (paymentModal.plan?.name || '').toLowerCase();
     setSelectedPlan(normalizedName);
     if (onSelectPlan) {
@@ -187,7 +197,6 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
     if (!card) return;
 
     if (isEntering) {
-      setHoveredCard(index);
       gsap.to(card, {
         scale: 1.01,
         rotateY: 0,
@@ -205,7 +214,6 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
         { x: 0, opacity: 1, duration: 0.2, stagger: 0.05 }
       );
     } else {
-      setHoveredCard(null);
       gsap.to(card, {
         scale: 1,
         rotateY: 0,
@@ -239,6 +247,17 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
   });
 
   const selectedPlanLabel = selectedPlan ? selectedPlan.toUpperCase() : 'FREE';
+
+  useEffect(() => {
+    if (!paymentModal.open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [paymentModal.open]);
 
 
 
@@ -343,9 +362,16 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
       </div>
 
       {/* Payment Modal */}
-      {paymentModal.open && (
-        <div className="payment-modal-overlay">
-          <div className="payment-modal-content">
+      {paymentModal.open && createPortal(
+        <div
+          className="payment-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setPaymentModal({ open: false, plan: null });
+            }
+          }}
+        >
+          <div className="payment-modal-content" role="dialog" aria-modal="true" aria-label="Payment checkout">
             <button
               className="modal-close-btn"
               onClick={() => setPaymentModal({ open: false, plan: null })}
@@ -359,7 +385,8 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               onError={handlePaymentError}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

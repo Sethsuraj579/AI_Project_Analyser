@@ -19,12 +19,7 @@ function MetricDetailCard({ metric, configs }) {
   const score = metric.normalisedScore || 0;
   const config = configs.find((c) => c.dimension === metric.dimension);
 
-  let details = {};
-  try {
-    details = JSON.parse(metric.detailsJson || '{}');
-  } catch (e) {
-    details = {};
-  }
+  const details = parseDetails(metric.detailsJson);
 
   return (
     <div className="card" style={{ borderLeft: `3px solid ${color}` }}>
@@ -86,6 +81,14 @@ function MetricDetailCard({ metric, configs }) {
       )}
     </div>
   );
+}
+
+function parseDetails(detailsJson) {
+  try {
+    return JSON.parse(detailsJson || '{}');
+  } catch {
+    return {};
+  }
 }
 
 function StatItem({ label, value, color }) {

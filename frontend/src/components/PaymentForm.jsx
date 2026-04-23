@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@apollo/client';
 import { CREATE_RAZORPAY_ORDER_MUTATION, VERIFY_RAZORPAY_PAYMENT_MUTATION } from '../graphql/queries';
 import './PaymentForm.css';
@@ -13,7 +13,7 @@ import './PaymentForm.css';
  *   onError: (error) => void - Called when there's an error
  */
 const PaymentForm = ({ plan, onSuccess, onError }) => {
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(Boolean(window.Razorpay));
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -36,7 +36,6 @@ const PaymentForm = ({ plan, onSuccess, onError }) => {
 
   useEffect(() => {
     if (window.Razorpay) {
-      setScriptLoaded(true);
       return;
     }
 

@@ -78,7 +78,7 @@ export default function Pricing() {
     { label: 'Support SLA', value: '< 2h' },
   ];
 
-  const handleSelectPlan = (planName) => {
+  const handleSelectPlan = (_planName) => {
     // Give user a moment to see the success message, then redirect
     setTimeout(() => {
       navigate('/');

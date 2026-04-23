@@ -1,7 +1,6 @@
-import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, ReferenceLine, Legend,
+  ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 
 const DIMENSION_COLORS = {
