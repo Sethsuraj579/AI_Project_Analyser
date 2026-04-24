@@ -32,7 +32,10 @@ FROM node:20-alpine AS frontend-build
 
 WORKDIR /app/frontend
 RUN apk upgrade --no-cache
-COPY frontend/package.json frontend/package-lock.json ./
+ENV npm_config_legacy_peer_deps=true \
+    npm_config_fund=false \
+    npm_config_audit=false
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci
 COPY frontend/ ./
 RUN npm run build

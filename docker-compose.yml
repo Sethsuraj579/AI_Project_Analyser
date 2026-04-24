@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ── PostgreSQL (local dev — in production use Neon) ──
   # Uncomment to use local PostgreSQL instead of Neon:

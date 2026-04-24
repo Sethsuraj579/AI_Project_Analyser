@@ -8,12 +8,16 @@ backend/__pycache__
 backend/**/*.pyc
 backend/db.sqlite3
 backend/*.sqlite3
+backend/db.sqlite3*
+backend/*.bak
+backend/*.bak_*
 backend/.pytest_cache
 backend/htmlcov
 backend/.coverage
 
 frontend/node_modules
 frontend/dist
+frontend/build
 frontend/.vite
 
 .env
