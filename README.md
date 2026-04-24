@@ -1,4 +1,4 @@
-# AI Project Analyser
+   # AI Project Analyser
 
 AI Project Analyser is a full-stack web application for analyzing software projects and presenting the results in a visual dashboard. It combines a Django backend with a React frontend to score projects, show charts and reports, manage pricing plans, and handle authentication and payments.
 
