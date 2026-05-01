@@ -35,7 +35,10 @@ function Login({ onLogin, onSwitchToRegister }) {
       }
     },
     onError(err) {
-      setError(err.message || 'Invalid credentials');
+      const message = err?.message?.toLowerCase().includes('failed to fetch')
+        ? 'Cannot reach server. Please try again in a moment.'
+        : (err.message || 'Invalid credentials');
+      setError(message);
     },
   });
 

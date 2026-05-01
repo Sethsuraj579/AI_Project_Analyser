@@ -1,8 +1,9 @@
 import { ApolloClient, InMemoryCache, HttpLink, ApolloLink, Observable, from as apolloFrom } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
+import { getGraphqlUrl } from './url';
 
 const httpLink = new HttpLink({
-  uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/',
+  uri: getGraphqlUrl(),
   fetchOptions: {
     mode: 'cors',
   },
@@ -65,8 +66,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
     isRefreshing = true;
 
     // Use a plain fetch to avoid infinite loop through the error link
-    const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8000/graphql/';
-    fetch(graphqlUrl, {
+    fetch(getGraphqlUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
