@@ -136,7 +136,7 @@ function App() {
               Pricing
             </NavLink>
             <NavLink to="/settings" className={({ isActive }) => isActive ? 'active' : ''} onClick={() => setIsMenuOpen(false)}>
-              <span className="nav-icon"><SettingsGlyph /></span>
+              
               Settings
             </NavLink>
           </nav>

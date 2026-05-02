@@ -96,7 +96,8 @@ const FALLBACK_PLANS = [
 export default function PricingPlans({ onSelectPlan, currentPlan }) {
   const { data, loading, error } = useQuery(GET_PLANS);
   const [upgradePlan] = useMutation(UPGRADE_PLAN);
-  const [selectedPlan, setSelectedPlan] = useState((currentPlan || 'free').toLowerCase());
+  const normalizedCurrentPlan = (currentPlan || 'free').toLowerCase();
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [paymentModal, setPaymentModal] = useState({ open: false, plan: null });
   const cardsRef = useRef([]);
   const headerRef = useRef(null);
@@ -133,10 +134,12 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
           }
           alert(result.data.upgradePlan.message);
         } else {
+          setSelectedPlan(null);
           alert('Error: ' + result.data.upgradePlan.message);
         }
       } catch (err) {
         console.error('Error upgrading plan:', err);
+        setSelectedPlan(null);
         alert('Failed to upgrade plan');
       }
     } else {
@@ -144,6 +147,8 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
         alert('Please sign in to start a paid plan. You can still review the pricing details without logging in.');
         return;
       }
+
+      setSelectedPlan(normalizedName);
 
       // Show payment form for paid plans
       setPaymentModal({ open: true, plan });
@@ -162,7 +167,13 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
 
   const handlePaymentError = (error) => {
     console.error('Payment error:', error);
+    setSelectedPlan(null);
     alert('Payment failed. Please try again.');
+  };
+
+  const closePaymentModal = () => {
+    setSelectedPlan(null);
+    setPaymentModal({ open: false, plan: null });
   };
 
   // GSAP animations on mount
@@ -246,8 +257,6 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
     };
   });
 
-  const selectedPlanLabel = selectedPlan ? selectedPlan.toUpperCase() : 'FREE';
-
   useEffect(() => {
     if (!paymentModal.open) return undefined;
 
@@ -259,7 +268,8 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
     };
   }, [paymentModal.open]);
 
-
+  const activePlan = selectedPlan || normalizedCurrentPlan;
+  const selectedPlanLabel = activePlan ? activePlan.toUpperCase() : 'FREE';
 
   if (plans.length === 0) {
     return <div className="pricing-container"><p className="pricing-notice">No plans configured yet</p></div>;
@@ -307,7 +317,7 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               key={plan.id}
               ref={(el) => (cardsRef.current[index] = el)}
               className={`pricing-card ${plan.normalizedName} ${
-                selectedPlan === plan.normalizedName ? 'active' : ''
+                activePlan === plan.normalizedName ? 'active' : ''
               }`}
               onMouseEnter={() => handleCardHover(index, true)}
               onMouseLeave={() => handleCardHover(index, false)}
@@ -349,11 +359,11 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
               </div>
 
               <button
-                className={`select-btn ${selectedPlan === plan.normalizedName ? 'current' : ''}`}
+                className={`select-btn ${activePlan === plan.normalizedName ? 'current' : ''}`}
                 onClick={() => handleSelectPlan(plan)}
-                disabled={selectedPlan === plan.normalizedName}
+                disabled={activePlan === plan.normalizedName}
               >
-                {selectedPlan === plan.normalizedName ? '✓ Current Plan' : 'Get Started'}
+                {activePlan === plan.normalizedName ? '✓ Current Plan' : 'Get Started'}
               </button>
             </div>
           ))}
@@ -367,14 +377,14 @@ export default function PricingPlans({ onSelectPlan, currentPlan }) {
           className="payment-modal-overlay"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              setPaymentModal({ open: false, plan: null });
+              closePaymentModal();
             }
           }}
         >
           <div className="payment-modal-content" role="dialog" aria-modal="true" aria-label="Payment checkout">
             <button
               className="modal-close-btn"
-              onClick={() => setPaymentModal({ open: false, plan: null })}
+              onClick={closePaymentModal}
               aria-label="Close payment modal"
             >
               ✕
