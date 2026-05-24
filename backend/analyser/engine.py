@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from urllib.parse import urlparse
 
 import requests
 from django.utils import timezone
@@ -143,16 +144,72 @@ def compute_grade(score):
 
 def _probe_url(url, timeout=10):
     """HTTP GET a URL and return response time in ms, or None on failure."""
-    if not url:
+    target_url = _normalize_url(url)
+    if not target_url:
         return None
     try:
         start = time.perf_counter()
-        resp = requests.get(url, timeout=timeout, allow_redirects=True)
+        resp = requests.get(target_url, timeout=timeout, allow_redirects=True)
         elapsed_ms = (time.perf_counter() - start) * 1000
         return {"elapsed_ms": round(elapsed_ms, 2), "status": resp.status_code}
     except Exception as exc:
-        logger.warning("URL probe failed for %s: %s", url, exc)
+        logger.warning("URL probe failed for %s (normalized=%s): %s", url, target_url, exc)
         return {"elapsed_ms": None, "error": str(exc)}
+
+
+def _normalize_url(url):
+    """Normalize URL-like input and default to HTTPS when scheme is missing."""
+    if not url or not isinstance(url, str):
+        return None
+
+    cleaned = url.strip()
+    if not cleaned:
+        return None
+
+    parsed = urlparse(cleaned)
+    if parsed.scheme:
+        return cleaned
+
+    if cleaned.startswith("//"):
+        return f"https:{cleaned}"
+
+    return f"https://{cleaned}"
+
+
+def _parse_cli_json(stdout, stderr=None, default=None):
+    """Parse CLI JSON output robustly even when extra text is present."""
+    for payload in (stdout, stderr):
+        parsed = _extract_json_from_text(payload)
+        if parsed is not None:
+            return parsed
+    return {} if default is None else default
+
+
+def _extract_json_from_text(text):
+    if not text:
+        return None
+
+    raw = text.strip()
+    if not raw:
+        return None
+
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+
+    for start_ch, end_ch in (("{", "}"), ("[", "]")):
+        start = raw.find(start_ch)
+        end = raw.rfind(end_ch)
+        if start == -1 or end == -1 or end <= start:
+            continue
+        candidate = raw[start:end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            continue
+
+    return None
 
 
 def _clone_repo(repo_url, dest_dir):
@@ -251,14 +308,14 @@ def collect_structure_modularity(project, repo_dir=None, **_kw):
             ["radon", "mi", target_dir, "-j"],
             capture_output=True, text=True, timeout=60,
         )
-        mi_data = json.loads(mi_result.stdout) if mi_result.stdout.strip() else {}
+        mi_data = _parse_cli_json(mi_result.stdout, mi_result.stderr, default={})
 
         # Radon Cyclomatic Complexity
         cc_result = subprocess.run(
             ["radon", "cc", target_dir, "-a", "-j"],
             capture_output=True, text=True, timeout=60,
         )
-        cc_data = json.loads(cc_result.stdout) if cc_result.stdout.strip() else {}
+        cc_data = _parse_cli_json(cc_result.stdout, cc_result.stderr, default={})
 
         # Calculate average maintainability index
         mi_scores = []
@@ -334,13 +391,18 @@ def collect_integration_success(project, **_kw):
     """
     endpoints = []
     if project.frontend_url:
-        endpoints.append(("frontend", project.frontend_url))
+        frontend_url = _normalize_url(project.frontend_url)
+        if frontend_url:
+            endpoints.append(("frontend", frontend_url))
     if project.backend_url:
-        endpoints.append(("backend", project.backend_url))
+        backend_url = _normalize_url(project.backend_url)
+        if backend_url:
+            endpoints.append(("backend", backend_url))
         # Also test common API sub-paths
-        base = project.backend_url.rstrip("/")
-        for suffix in ["/health", "/api", "/graphql"]:
-            endpoints.append((f"backend{suffix}", f"{base}{suffix}"))
+        if backend_url:
+            base = backend_url.rstrip("/")
+            for suffix in ["/health", "/api", "/graphql"]:
+                endpoints.append((f"backend{suffix}", f"{base}{suffix}"))
 
     if not endpoints:
         return 50.0, {
@@ -387,7 +449,7 @@ def collect_security_audit(project, repo_dir=None, **_kw):
                 ["bandit", "-r", repo_dir, "-f", "json", "-q"],
                 capture_output=True, text=True, timeout=120,
             )
-            bandit_data = json.loads(result.stdout) if result.stdout.strip() else {}
+            bandit_data = _parse_cli_json(result.stdout, result.stderr, default={})
             metrics = bandit_data.get("metrics", {}).get("_totals", {})
 
             high_sev = metrics.get("SEVERITY.HIGH", 0)
@@ -431,7 +493,7 @@ def collect_security_audit(project, repo_dir=None, **_kw):
                 ["safety", "check", "--file", req_file, "--json"],
                 capture_output=True, text=True, timeout=60,
             )
-            vulns = json.loads(result.stdout) if result.stdout.strip() else []
+            vulns = _parse_cli_json(result.stdout, result.stderr, default=[])
             vuln_count = len(vulns) if isinstance(vulns, list) else 0
             safety_score = max(0, 100 - vuln_count * 15)
 
@@ -452,7 +514,8 @@ def collect_security_audit(project, repo_dir=None, **_kw):
     # ── 3. HTTPS check ──
     for label, url in [("frontend_https", project.frontend_url), ("backend_https", project.backend_url)]:
         total_checks += 1
-        if url and url.startswith("https://"):
+        normalized = _normalize_url(url)
+        if normalized and normalized.startswith("https://"):
             passed_checks += 1
             details["checks"][label] = True
         else:
@@ -462,7 +525,8 @@ def collect_security_audit(project, repo_dir=None, **_kw):
     if project.backend_url:
         total_checks += 1
         try:
-            resp = requests.options(project.backend_url, timeout=5)
+            backend_url = _normalize_url(project.backend_url)
+            resp = requests.options(backend_url, timeout=5)
             has_cors = "access-control-allow-origin" in {k.lower() for k in resp.headers}
             has_xframe = "x-frame-options" in {k.lower() for k in resp.headers}
             details["checks"]["cors_configured"] = has_cors
