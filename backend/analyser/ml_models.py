@@ -3,10 +3,11 @@ Machine Learning Models Manager
 Handles transformer models, summarization, and embeddings
 """
 
-from transformers import pipeline
-from sentence_transformers import SentenceTransformer
-import chromadb
 import logging
+
+# Heavy ML imports are done lazily inside loader methods to avoid importing
+# large libraries (torch, transformers, sentence-transformers) at Django
+# startup where they cause high memory usage and OOMs during worker boot.
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,9 @@ class ModelManager:
         if self.summarizer is None:
             try:
                 logger.info("Loading summarizer model...")
+                # Import transformers lazily
+                from transformers import pipeline
+
                 self.summarizer = pipeline(
                     "text-generation",
                     model="distilgpt2",
@@ -50,6 +54,9 @@ class ModelManager:
         if self.embeddings is None:
             try:
                 logger.info("Loading embeddings model...")
+                # Import sentence-transformers lazily
+                from sentence_transformers import SentenceTransformer
+
                 self.embeddings = SentenceTransformer("all-MiniLM-L6-v2")
                 logger.info("Embeddings model loaded")
             except Exception as e:
@@ -62,6 +69,9 @@ class ModelManager:
         if self.chroma_client is None:
             try:
                 logger.info("Initializing Chroma client...")
+                # Import chromadb lazily to avoid startup import cost
+                import chromadb
+
                 self.chroma_client = chromadb.Client()
                 logger.info("Chroma client initialized")
             except Exception as e:
