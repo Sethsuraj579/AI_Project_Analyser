@@ -168,6 +168,12 @@
   cursor: not-allowed;
 }
 
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
 .auth-btn {
   width: 100%;
   border-radius: 10px;

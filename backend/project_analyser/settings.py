@@ -133,6 +133,8 @@ GRAPHQL_JWT = {
     "JWT_EXPIRATION_DELTA": timedelta(hours=24),
     "JWT_REFRESH_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_AUTH_HEADER_PREFIX": "Bearer",
+    "JWT_PAYLOAD_HANDLER": "analyser.jwt_utils.jwt_payload",
+    "JWT_DECODE_HANDLER": "analyser.jwt_utils.jwt_decode",
 }
 
 # ──────────────────────────────────────────────────────────────
@@ -162,6 +164,7 @@ else:
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="AI Project Analyser <noreply@analyser.local>")
 CONTACT_RECEIVER_EMAIL = env("CONTACT_RECEIVER_EMAIL", default="sethsuraj202@outlook.com")
 FEEDBACK_RECEIVER_EMAIL = env("FEEDBACK_RECEIVER_EMAIL", default=CONTACT_RECEIVER_EMAIL)
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 
 # ──────────────────────────────────────────────────────────────
 # CORS — production-safe origins

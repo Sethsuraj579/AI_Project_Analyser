@@ -14,7 +14,7 @@ function MailMark() {
   );
 }
 
-function Login({ onLogin, onSwitchToRegister }) {
+function Login({ onLogin, onSwitchToRegister, onSwitchToReset }) {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -213,6 +213,15 @@ function Login({ onLogin, onSwitchToRegister }) {
                 autoComplete="current-password"
                 required
               />
+            </div>
+            <div className="auth-forgot-row">
+              <button
+                type="button"
+                className="auth-link"
+                onClick={onSwitchToReset}
+              >
+                Forgot password?
+              </button>
             </div>
             <button 
               className="auth-btn auth-btn-primary" 

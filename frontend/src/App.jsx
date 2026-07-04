@@ -11,6 +11,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function LoadingFallback() {
@@ -82,8 +83,13 @@ function App() {
               <Login
                 onLogin={handleLogin}
                 onSwitchToRegister={() => navigate('/register')}
+                onSwitchToReset={() => navigate('/reset-password')}
               />
             }
+          />
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
           />
           <Route
             path="/register"
@@ -155,6 +161,7 @@ function App() {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/register" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

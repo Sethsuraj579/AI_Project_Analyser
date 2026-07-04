@@ -177,6 +177,24 @@ export const VERIFY_GOOGLE_OTP = gql`
   }
 `;
 
+export const REQUEST_PASSWORD_RESET = gql`
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(email: $email) {
+      success
+      message
+    }
+  }
+`;
+
+export const RESET_PASSWORD = gql`
+  mutation ResetPassword($uidb64: String!, $token: String!, $newPassword: String!) {
+    resetPassword(uidb64: $uidb64, token: $token, newPassword: $newPassword) {
+      success
+      message
+    }
+  }
+`;
+
 export const CREATE_PROJECT = gql`
   mutation CreateProject(
     $name: String!

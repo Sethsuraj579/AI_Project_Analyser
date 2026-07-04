@@ -9,11 +9,15 @@ import graphene
 import graphql_jwt
 import logging
 from graphene_django import DjangoObjectType
+from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+from django.utils.encoding import force_bytes, force_str
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from datetime import timedelta
 from .query_utils import latest_completed_run, projects_with_latest_run
 from .models import Project, AnalysisRun, MetricSnapshot, HistoricalTrend, EmailOTP, ProjectSummary, ChatMessage, Plan, UserSubscription, Payment, Invoice, UserProfile, UserPreferences, ContactMessage, FAQ, OutboundWebhook, UserFeedback
@@ -56,19 +60,31 @@ def _client_ip(info):
 def _check_auth_rate_limit(info, action, limit=5, window_seconds=600):
     ip_address = _client_ip(info)
     cache_key = f"auth-rate:{action}:{ip_address}"
-    attempts = cache.get(cache_key, 0)
+    try:
+        attempts = cache.get(cache_key, 0)
+    except Exception as exc:
+        logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
+        return
 
     if attempts >= limit:
         raise Exception("Too many attempts. Please wait and try again later.")
 
     if attempts == 0:
-        cache.set(cache_key, 1, timeout=window_seconds)
+        try:
+            cache.set(cache_key, 1, timeout=window_seconds)
+        except Exception as exc:
+            logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
         return
 
     try:
         cache.incr(cache_key)
     except ValueError:
-        cache.set(cache_key, attempts + 1, timeout=window_seconds)
+        try:
+            cache.set(cache_key, attempts + 1, timeout=window_seconds)
+        except Exception as exc:
+            logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
+    except Exception as exc:
+        logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
 
 
 def _check_user_rate_limit(info, action, limit=100, window_seconds=3600):
@@ -76,19 +92,31 @@ def _check_user_rate_limit(info, action, limit=100, window_seconds=3600):
     user = _require_auth(info)
     ip_address = _client_ip(info)
     cache_key = f"user-rate:{action}:{user.id}:{ip_address}"
-    attempts = cache.get(cache_key, 0)
+    try:
+        attempts = cache.get(cache_key, 0)
+    except Exception as exc:
+        logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
+        return
 
     if attempts >= limit:
         raise Exception("Rate limit exceeded. Please wait and try again later.")
 
     if attempts == 0:
-        cache.set(cache_key, 1, timeout=window_seconds)
+        try:
+            cache.set(cache_key, 1, timeout=window_seconds)
+        except Exception as exc:
+            logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
         return
 
     try:
         cache.incr(cache_key)
     except ValueError:
-        cache.set(cache_key, attempts + 1, timeout=window_seconds)
+        try:
+            cache.set(cache_key, attempts + 1, timeout=window_seconds)
+        except Exception as exc:
+            logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
+    except Exception as exc:
+        logger.warning("Rate limit cache unavailable for %s: %s", action, exc)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -1405,6 +1433,100 @@ AI Project Analyser Team
         return LoginUser(success=True, message="Login successful!", token=token)
 
 
+class RequestPasswordReset(graphene.Mutation):
+    """Send a password reset link to the user's email address."""
+
+    class Arguments:
+        email = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, email):
+        _check_auth_rate_limit(info, "request-password-reset", limit=5, window_seconds=900)
+        cleaned_email = email.strip().lower()
+
+        if not cleaned_email or "@" not in cleaned_email:
+            return RequestPasswordReset(success=False, message="Please enter a valid email address.")
+
+        user = User.objects.filter(email__iexact=cleaned_email).first()
+        if user is None:
+            return RequestPasswordReset(
+                success=True,
+                message="If an account exists for that email, we sent a password reset link.",
+            )
+
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        frontend_base = getattr(django_settings, "FRONTEND_URL", "http://localhost:5173").rstrip("/")
+        reset_link = f"{frontend_base}/reset-password?uid={uidb64}&token={token}"
+
+        try:
+            send_mail(
+                subject="Reset Your AI Project Analyser Password",
+                message=(
+                    f"Hello {user.username},\n\n"
+                    "We received a request to reset your password.\n\n"
+                    f"Reset your password here:\n{reset_link}\n\n"
+                    "This link expires automatically and can only be used once.\n"
+                    "If you did not request this, you can safely ignore this email."
+                ),
+                from_email=getattr(django_settings, "DEFAULT_FROM_EMAIL", "noreply@analyser.local"),
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            logger.info("Password reset email sent to %s", user.email)
+        except Exception as exc:
+            logger.warning("Failed to send password reset email to %s: %s", user.email, exc)
+
+        return RequestPasswordReset(
+            success=True,
+            message="If an account exists for that email, we sent a password reset link.",
+        )
+
+
+class ResetPassword(graphene.Mutation):
+    """Reset a user password using a signed email token."""
+
+    class Arguments:
+        uidb64 = graphene.String(required=True)
+        token = graphene.String(required=True)
+        new_password = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    message = graphene.String()
+
+    def mutate(self, info, uidb64, token, new_password):
+        _check_auth_rate_limit(info, "reset-password", limit=5, window_seconds=900)
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=user_id)
+        except Exception:
+            return ResetPassword(success=False, message="This reset link is invalid or malformed.")
+
+        if not default_token_generator.check_token(user, token):
+            return ResetPassword(success=False, message="This reset link has expired or is invalid.")
+
+        try:
+            from django.contrib.auth.password_validation import validate_password
+
+            validate_password(new_password, user=user)
+        except ValidationError as exc:
+            messages = getattr(exc, "messages", [str(exc)])
+            return ResetPassword(success=False, message=" ".join(messages))
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.password_changed_at = timezone.now()
+        profile.save(update_fields=["password_changed_at", "updated_at"])
+
+        logger.info("Password reset completed for user: %s", user.username)
+        return ResetPassword(success=True, message="Password updated successfully. You can now sign in.")
+
+
 class VerifyGoogleOTP(graphene.Mutation):
     """Verify OTP sent to Google user's email and complete login/registration."""
 
@@ -1564,6 +1686,10 @@ class ChangePassword(graphene.Mutation):
         # Set new password
         user.set_password(new_password)
         user.save()
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.password_changed_at = timezone.now()
+        profile.save(update_fields=["password_changed_at", "updated_at"])
         
         logger.info(f"Password changed for user: {user.username}")
         return ChangePassword(
@@ -2009,6 +2135,8 @@ class Mutation(graphene.ObjectType):
     login_user = LoginUser.Field()
     google_auth = GoogleAuth.Field()
     verify_google_otp = VerifyGoogleOTP.Field()
+    request_password_reset = RequestPasswordReset.Field()
+    reset_password = ResetPassword.Field()
 
     # Subscription & Plans
     upgrade_plan = UpgradePlan.Field()
